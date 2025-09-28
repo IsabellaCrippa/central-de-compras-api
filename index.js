@@ -1,9 +1,10 @@
 const express = require('express');
+const path = require('path');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const userRoutes = require('./src/routes/users');
-const supplierRoutes = require('./src/routes/supplier');
 const storeRoutes = require('./src/routes/store');
+const supplierRoutes = require('./src/routes/supplier');
 
 const app = express();
 const port = 3000;
