@@ -1,13 +1,13 @@
-import express from "express";
-import { promises as fs } from "fs";
-import { v4 as uuid } from "uuid";
+const express = require('express');
+const fs = require('fs').promises;
+const { v4: uuid } = require('uuid');
 
 const router = express.Router();
-const FILE_PATH = "./data/order.json";
+const FILE_PATH = './data/order.json';
 
 // 🔹 Ler JSON
 async function readFile() {
-  const data = await fs.readFile(FILE_PATH, "utf-8");
+  const data = await fs.readFile(FILE_PATH, 'utf-8');
   return JSON.parse(data);
 }
 
@@ -17,19 +17,19 @@ async function writeFile(data) {
 }
 
 // GET todos os pedidos
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   res.json(await readFile());
 });
 
 // GET pedido por ID
-router.get("/:id", async (req, res) => {
+router.get('/:id', async (req, res) => {
   const orders = await readFile();
   const order = orders.find(o => o.id === req.params.id);
-  order ? res.json(order) : res.status(404).json({ error: "Pedido não encontrado" });
+  order ? res.json(order) : res.status(404).json({ error: 'Pedido não encontrado' });
 });
 
 // POST criar pedido
-router.post("/", async (req, res) => {
+router.post('/', async (req, res) => {
   const orders = await readFile();
   const newOrder = { id: uuid(), ...req.body };
   orders.push(newOrder);
@@ -38,11 +38,11 @@ router.post("/", async (req, res) => {
 });
 
 // PUT atualizar pedido
-router.put("/:id", async (req, res) => {
+router.put('/:id', async (req, res) => {
   const orders = await readFile();
   const index = orders.findIndex(o => o.id === req.params.id);
 
-  if (index === -1) return res.status(404).json({ error: "Pedido não encontrado" });
+  if (index === -1) return res.status(404).json({ error: 'Pedido não encontrado' });
 
   orders[index] = { ...orders[index], ...req.body };
   await writeFile(orders);
@@ -50,16 +50,16 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE remover pedido
-router.delete("/:id", async (req, res) => {
+router.delete('/:id', async (req, res) => {
   const orders = await readFile();
   const filtered = orders.filter(o => o.id !== req.params.id);
 
   if (filtered.length === orders.length) {
-    return res.status(404).json({ error: "Pedido não encontrado" });
+    return res.status(404).json({ error: 'Pedido não encontrado' });
   }
 
   await writeFile(filtered);
-  res.json({ message: "Pedido removido" });
+  res.json({ message: 'Pedido removido' });
 });
 
-export default router;
+module.exports = router;

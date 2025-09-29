@@ -1,13 +1,13 @@
-import express from "express";
-import { promises as fs } from "fs";
-import { v4 as uuid } from "uuid";
+const express = require('express');
+const fs = require('fs').promises;
+const { v4: uuid } = require('uuid');
 
 const router = express.Router();
-const FILE_PATH = "./data/product.json";
+const FILE_PATH = './data/product.json';
 
 // 🔹 Ler JSON
 async function readFile() {
-  const data = await fs.readFile(FILE_PATH, "utf-8");
+  const data = await fs.readFile(FILE_PATH, 'utf-8');
   return JSON.parse(data);
 }
 
@@ -17,19 +17,19 @@ async function writeFile(data) {
 }
 
 // GET todos os produtos
-router.get("/", async (req, res) => {
+router.get('/', async (req, res) => {
   res.json(await readFile());
 });
 
 // GET produto por ID
-router.get("/:id", async (req, res) => {
+router.get('/:id', async (req, res) => {
   const products = await readFile();
   const product = products.find(p => p.id === req.params.id);
-  product ? res.json(product) : res.status(404).json({ error: "Produto não encontrado" });
+  product ? res.json(product) : res.status(404).json({ error: 'Produto não encontrado' });
 });
 
 // POST criar produto
-router.post("/", async (req, res) => {
+router.post('/', async (req, res) => {
   const products = await readFile();
   const newProduct = { id: uuid(), ...req.body };
   products.push(newProduct);
@@ -38,11 +38,11 @@ router.post("/", async (req, res) => {
 });
 
 // PUT atualizar produto
-router.put("/:id", async (req, res) => {
+router.put('/:id', async (req, res) => {
   const products = await readFile();
   const index = products.findIndex(p => p.id === req.params.id);
 
-  if (index === -1) return res.status(404).json({ error: "Produto não encontrado" });
+  if (index === -1) return res.status(404).json({ error: 'Produto não encontrado' });
 
   products[index] = { ...products[index], ...req.body };
   await writeFile(products);
@@ -50,16 +50,16 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE remover produto
-router.delete("/:id", async (req, res) => {
+router.delete('/:id', async (req, res) => {
   const products = await readFile();
   const filtered = products.filter(p => p.id !== req.params.id);
 
   if (filtered.length === products.length) {
-    return res.status(404).json({ error: "Produto não encontrado" });
+    return res.status(404).json({ error: 'Produto não encontrado' });
   }
 
   await writeFile(filtered);
-  res.json({ message: "Produto removido" });
+  res.json({ message: 'Produto removido' });
 });
 
-export default router;
+module.exports = router;
