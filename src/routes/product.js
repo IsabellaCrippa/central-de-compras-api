@@ -189,5 +189,34 @@ router.delete('/:id', (req, res) => {
   fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
   res.json({ message: 'Produto removido' });
 });
+// Adicione esta rota no seu product.js, antes do module.exports
+
+// Debug: verificar se a rota está funcionando e o conteúdo do arquivo
+router.get('/debug/status', (req, res) => {
+  try {
+    const fileExists = fs.existsSync(FILE_PATH);
+    let fileContent = 'Arquivo não existe';
+    let data = { products: [] };
+    
+    if (fileExists) {
+      fileContent = fs.readFileSync(FILE_PATH, 'utf-8');
+      data = JSON.parse(fileContent);
+    }
+    
+    res.json({
+      message: 'Rota products está funcionando!',
+      fileExists: fileExists,
+      filePath: FILE_PATH,
+      fileContent: fileContent,
+      productsCount: data.products ? data.products.length : 0,
+      products: data.products || []
+    });
+  } catch (error) {
+    res.json({
+      error: error.message,
+      filePath: FILE_PATH
+    });
+  }
+});
 
 module.exports = router;
