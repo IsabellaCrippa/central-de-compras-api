@@ -1,31 +1,22 @@
 const express = require('express');
+const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
-const router = express.Router();
-const FILE_PATH = path.join(__dirname, '../data/product.json');
+// Caminho para o arquivo JSON - CORRIGIDO seguindo o padrão do users.js
+const dataPath = path.join(__dirname, '..', 'data', 'product.json');
 
-// Cria arquivo se não existir
-if (!fs.existsSync(FILE_PATH)) {
-  fs.writeFileSync(FILE_PATH, '{"products":[]}');
-}
+// Função auxiliar para ler os dados do JSON
+const readProducts = () => {
+  const data = fs.readFileSync(dataPath, 'utf8');
+  return JSON.parse(data);
+};
 
-/**
- * @swagger
- * components:
- *   schemas:
- *     Product:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *         name:
- *           type: string
- *         price:
- *           type: number
- *         stock:
- *           type: number
- */
+// Função auxiliar para escrever os dados no JSON
+const writeProducts = (data) => {
+  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+};
 
 /**
  * @swagger
@@ -38,11 +29,11 @@ if (!fs.existsSync(FILE_PATH)) {
  * @swagger
  * /products:
  *   get:
- *     summary: Retorna todos os produtos
+ *     summary: Lista todos os produtos
  *     tags: [Products]
  *     responses:
  *       200:
- *         description: Lista de produtos
+ *         description: Lista de produtos retornada com sucesso.
  *         content:
  *           application/json:
  *             schema:
@@ -51,36 +42,37 @@ if (!fs.existsSync(FILE_PATH)) {
  *                 $ref: '#/components/schemas/Product'
  */
 router.get('/', (req, res) => {
-  const data = JSON.parse(fs.readFileSync(FILE_PATH));
-  res.json(data.products);
+  const products = readProducts();
+  res.status(200).json(products);
 });
 
 /**
  * @swagger
  * /products/{id}:
  *   get:
- *     summary: Busca produto por ID
+ *     summary: Busca um produto pelo ID
  *     tags: [Products]
  *     parameters:
  *       - in: path
  *         name: id
- *         required: true
  *         schema:
  *           type: string
+ *         required: true
+ *         description: ID do produto
  *     responses:
  *       200:
- *         description: Produto encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
+ *         description: Produto encontrado.
  *       404:
- *         description: Produto não encontrado
+ *         description: Produto não encontrado.
  */
 router.get('/:id', (req, res) => {
-  const data = JSON.parse(fs.readFileSync(FILE_PATH));
-  const product = data.products.find(p => p.id === req.params.id);
-  product ? res.json(product) : res.status(404).json({ error: 'Produto não encontrado' });
+  const products = readProducts();
+  const product = products.find(p => p.id === req.params.id);
+  if (product) {
+    res.status(200).json(product);
+  } else {
+    res.status(404).send('Produto não encontrado.');
+  }
 });
 
 /**
@@ -94,30 +86,21 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - name
- *               - price
- *             properties:
- *               name:
- *                 type: string
- *               price:
- *                 type: number
- *               stock:
- *                 type: number
+ *             $ref: '#/components/schemas/NewProduct'
  *     responses:
  *       201:
- *         description: Produto criado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
+ *         description: Produto criado com sucesso.
  */
 router.post('/', (req, res) => {
-  const data = JSON.parse(fs.readFileSync(FILE_PATH));
-  const newProduct = { id: Math.random().toString(36).substr(2, 9), ...req.body };
-  data.products.push(newProduct);
-  fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
+  const products = readProducts();
+  const newProduct = req.body;
+
+  // Gera um ID único seguindo o mesmo padrão do users.js
+  newProduct.id = crypto.randomBytes(20).toString('hex');
+  
+  products.push(newProduct);
+  writeProducts(products);
+  
   res.status(201).json(newProduct);
 });
 
@@ -125,97 +108,69 @@ router.post('/', (req, res) => {
  * @swagger
  * /products/{id}:
  *   put:
- *     summary: Atualiza um produto
+ *     summary: Atualiza um produto existente
  *     tags: [Products]
  *     parameters:
  *       - in: path
  *         name: id
- *         required: true
  *         schema:
  *           type: string
+ *         required: true
+ *         description: ID do produto a ser atualizado
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               price:
- *                 type: number
- *               stock:
- *                 type: number
+ *             $ref: '#/components/schemas/Product'
  *     responses:
  *       200:
- *         description: Produto atualizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Product'
+ *         description: Produto atualizado com sucesso.
  *       404:
- *         description: Produto não encontrado
+ *         description: Produto não encontrado.
  */
 router.put('/:id', (req, res) => {
-  const data = JSON.parse(fs.readFileSync(FILE_PATH));
-  const index = data.products.findIndex(p => p.id === req.params.id);
-  if (index === -1) return res.status(404).json({ error: 'Produto não encontrado' });
-  data.products[index] = { ...data.products[index], ...req.body };
-  fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-  res.json(data.products[index]);
+  const products = readProducts();
+  const index = products.findIndex(p => p.id === req.params.id);
+
+  if (index !== -1) {
+    // Atualiza o produto mantendo o ID original
+    products[index] = { ...products[index], ...req.body, id: req.params.id };
+    writeProducts(products);
+    res.status(200).json(products[index]);
+  } else {
+    res.status(404).send('Produto não encontrado.');
+  }
 });
 
 /**
  * @swagger
  * /products/{id}:
  *   delete:
- *     summary: Remove um produto
+ *     summary: Deleta um produto
  *     tags: [Products]
  *     parameters:
  *       - in: path
  *         name: id
- *         required: true
  *         schema:
  *           type: string
+ *         required: true
+ *         description: ID do produto a ser deletado
  *     responses:
  *       200:
- *         description: Produto removido
+ *         description: Produto deletado com sucesso.
  *       404:
- *         description: Produto não encontrado
+ *         description: Produto não encontrado.
  */
 router.delete('/:id', (req, res) => {
-  const data = JSON.parse(fs.readFileSync(FILE_PATH));
-  data.products = data.products.filter(p => p.id !== req.params.id);
-  fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-  res.json({ message: 'Produto removido' });
-});
-// Adicione esta rota no seu product.js, antes do module.exports
+  let products = readProducts();
+  const filteredProducts = products.filter(p => p.id !== req.params.id);
 
-// Debug: verificar se a rota está funcionando e o conteúdo do arquivo
-router.get('/debug/status', (req, res) => {
-  try {
-    const fileExists = fs.existsSync(FILE_PATH);
-    let fileContent = 'Arquivo não existe';
-    let data = { products: [] };
-    
-    if (fileExists) {
-      fileContent = fs.readFileSync(FILE_PATH, 'utf-8');
-      data = JSON.parse(fileContent);
-    }
-    
-    res.json({
-      message: 'Rota products está funcionando!',
-      fileExists: fileExists,
-      filePath: FILE_PATH,
-      fileContent: fileContent,
-      productsCount: data.products ? data.products.length : 0,
-      products: data.products || []
-    });
-  } catch (error) {
-    res.json({
-      error: error.message,
-      filePath: FILE_PATH
-    });
+  if (products.length !== filteredProducts.length) {
+    writeProducts(filteredProducts);
+    res.status(200).send('Produto deletado com sucesso.');
+  } else {
+    res.status(404).send('Produto não encontrado.');
   }
 });
 
