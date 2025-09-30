@@ -5,6 +5,11 @@ const path = require('path');
 const router = express.Router();
 const FILE_PATH = path.join(__dirname, '../data/product.json');
 
+// Cria arquivo se não existir
+if (!fs.existsSync(FILE_PATH)) {
+  fs.writeFileSync(FILE_PATH, '{"products":[]}');
+}
+
 /**
  * @swagger
  * components:
@@ -14,32 +19,12 @@ const FILE_PATH = path.join(__dirname, '../data/product.json');
  *       properties:
  *         id:
  *           type: string
- *           description: ID único do produto
- *           example: "abc123xyz"
  *         name:
  *           type: string
- *           example: "Teclado Mecânico"
  *         price:
  *           type: number
- *           example: 199.9
  *         stock:
  *           type: number
- *           example: 50
- *     NewProduct:
- *       type: object
- *       required:
- *         - name
- *         - price
- *       properties:
- *         name:
- *           type: string
- *           example: "Teclado Mecânico"
- *         price:
- *           type: number
- *           example: 199.9
- *         stock:
- *           type: number
- *           example: 50
  */
 
 /**
@@ -49,7 +34,6 @@ const FILE_PATH = path.join(__dirname, '../data/product.json');
  *   description: Gerenciamento de produtos
  */
 
-// GET /products
 /**
  * @swagger
  * /products:
@@ -67,15 +51,10 @@ const FILE_PATH = path.join(__dirname, '../data/product.json');
  *                 $ref: '#/components/schemas/Product'
  */
 router.get('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    res.json(data.products || []);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao ler produtos' });
-  }
+  const data = JSON.parse(fs.readFileSync(FILE_PATH));
+  res.json(data.products);
 });
 
-// GET /products/{id}
 /**
  * @swagger
  * /products/{id}:
@@ -85,10 +64,9 @@ router.get('/', (req, res) => {
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
- *         description: ID do produto
  *     responses:
  *       200:
  *         description: Produto encontrado
@@ -100,17 +78,11 @@ router.get('/', (req, res) => {
  *         description: Produto não encontrado
  */
 router.get('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const product = (data.products || []).find(p => p.id === req.params.id);
-    if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
-    res.json(product);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar produto' });
-  }
+  const data = JSON.parse(fs.readFileSync(FILE_PATH));
+  const product = data.products.find(p => p.id === req.params.id);
+  product ? res.json(product) : res.status(404).json({ error: 'Produto não encontrado' });
 });
 
-// POST /products
 /**
  * @swagger
  * /products:
@@ -122,32 +94,33 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewProduct'
+ *             type: object
+ *             required:
+ *               - name
+ *               - price
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               stock:
+ *                 type: number
  *     responses:
  *       201:
- *         description: Produto criado com sucesso
+ *         description: Produto criado
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Product'
  */
 router.post('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const newProduct = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...req.body
-    };
-    data.products = data.products || [];
-    data.products.push(newProduct);
-    fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-    res.status(201).json(newProduct);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar produto' });
-  }
+  const data = JSON.parse(fs.readFileSync(FILE_PATH));
+  const newProduct = { id: Math.random().toString(36).substr(2, 9), ...req.body };
+  data.products.push(newProduct);
+  fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
+  res.status(201).json(newProduct);
 });
 
-// PUT /products/{id}
 /**
  * @swagger
  * /products/{id}:
@@ -157,16 +130,22 @@ router.post('/', (req, res) => {
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
- *         description: ID do produto
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewProduct'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               stock:
+ *                 type: number
  *     responses:
  *       200:
  *         description: Produto atualizado
@@ -178,19 +157,14 @@ router.post('/', (req, res) => {
  *         description: Produto não encontrado
  */
 router.put('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const index = (data.products || []).findIndex(p => p.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'Produto não encontrado' });
-    data.products[index] = { ...data.products[index], ...req.body };
-    fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-    res.json(data.products[index]);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao atualizar produto' });
-  }
+  const data = JSON.parse(fs.readFileSync(FILE_PATH));
+  const index = data.products.findIndex(p => p.id === req.params.id);
+  if (index === -1) return res.status(404).json({ error: 'Produto não encontrado' });
+  data.products[index] = { ...data.products[index], ...req.body };
+  fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
+  res.json(data.products[index]);
 });
 
-// DELETE /products/{id}
 /**
  * @swagger
  * /products/{id}:
@@ -200,10 +174,9 @@ router.put('/:id', (req, res) => {
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
  *         schema:
  *           type: string
- *         required: true
- *         description: ID do produto
  *     responses:
  *       200:
  *         description: Produto removido
@@ -211,18 +184,10 @@ router.put('/:id', (req, res) => {
  *         description: Produto não encontrado
  */
 router.delete('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const products = data.products || [];
-    const index = products.findIndex(p => p.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'Produto não encontrado' });
-    products.splice(index, 1);
-    data.products = products;
-    fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-    res.json({ message: 'Produto removido com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao remover produto' });
-  }
+  const data = JSON.parse(fs.readFileSync(FILE_PATH));
+  data.products = data.products.filter(p => p.id !== req.params.id);
+  fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
+  res.json({ message: 'Produto removido' });
 });
 
 module.exports = router;
