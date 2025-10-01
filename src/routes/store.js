@@ -2,8 +2,20 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
-const storesPath = path.join(__dirname, '../data/store.json');
+const dataPath = path.join(__dirname, '..', 'data', 'store.json');
+
+// Função auxiliar para ler os dados do JSON
+const readStores = () => {
+  const data = fs.readFileSync(dataPath, 'utf8');
+  return JSON.parse(data);
+};
+
+// Função auxiliar para escrever os dados no JSON
+const writeStores = (data) => {
+  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+};
 
 /**
  * @swagger
@@ -15,7 +27,6 @@ const storesPath = path.join(__dirname, '../data/store.json');
  *         id:
  *           type: string
  *           description: ID único da loja
- *           example: "7a6cc1282c5f6ec0235acd2bfa788145aa2a67fd"
  *         store_name:
  *           type: string
  *           example: "Bingo Heeler"
@@ -35,32 +46,6 @@ const storesPath = path.join(__dirname, '../data/store.json');
  *           type: string
  *           enum: [on, off]
  *           example: "on"
- *     NewStore:
- *       type: object
- *       required:
- *         - store_name
- *         - cnpj
- *         - contact_email
- *       properties:
- *         store_name:
- *           type: string
- *           example: "Nova Loja"
- *         cnpj:
- *           type: string
- *           example: "12.345.678/0001-90"
- *         address:
- *           type: string
- *           example: "Rua Exemplo, 123"
- *         phone_number:
- *           type: string
- *           example: "48 1234 5678"
- *         contact_email:
- *           type: string
- *           example: "contato@novaloja.com"
- *         status:
- *           type: string
- *           enum: [on, off]
- *           example: "on"
  */
 
 /**
@@ -70,16 +55,15 @@ const storesPath = path.join(__dirname, '../data/store.json');
  *   description: Gerenciamento de lojas
  */
 
-// GET /stores
 /**
  * @swagger
  * /stores:
  *   get:
- *     summary: Retorna todas as lojas
+ *     summary: Lista todas as lojas
  *     tags: [Stores]
  *     responses:
  *       200:
- *         description: Lista de lojas
+ *         description: Lista de lojas retornada com sucesso.
  *         content:
  *           application/json:
  *             schema:
@@ -88,20 +72,15 @@ const storesPath = path.join(__dirname, '../data/store.json');
  *                 $ref: '#/components/schemas/Store'
  */
 router.get('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(storesPath, 'utf-8'));
-    res.json(data.stores);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao ler lojas' });
-  }
+  const stores = readStores();
+  res.status(200).json(stores);
 });
 
-// GET /stores/{id}
 /**
  * @swagger
  * /stores/{id}:
  *   get:
- *     summary: Busca loja por ID
+ *     summary: Busca uma loja pelo ID
  *     tags: [Stores]
  *     parameters:
  *       - in: path
@@ -112,28 +91,20 @@ router.get('/', (req, res) => {
  *         description: ID da loja
  *     responses:
  *       200:
- *         description: Loja encontrada
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Store'
+ *         description: Loja encontrada.
  *       404:
- *         description: Loja não encontrada
+ *         description: Loja não encontrada.
  */
 router.get('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(storesPath, 'utf-8'));
-    const store = data.stores.find(s => s.id === req.params.id);
-    if (!store) {
-      return res.status(404).json({ error: 'Loja não encontrada' });
-    }
-    res.json(store);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar loja' });
+  const stores = readStores();
+  const store = stores.find(s => s.id === req.params.id);
+  if (store) {
+    res.status(200).json(store);
+  } else {
+    res.status(404).send('Loja não encontrada.');
   }
 });
 
-// POST /stores
 /**
  * @swagger
  * /stores:
@@ -145,36 +116,29 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewStore'
+ *             $ref: '#/components/schemas/Store'
  *     responses:
  *       201:
- *         description: Loja criada com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Store'
+ *         description: Loja criada com sucesso.
  */
 router.post('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(storesPath, 'utf-8'));
-    const newStore = {
-      id: generateId(),
-      ...req.body
-    };
-    data.stores.push(newStore);
-    fs.writeFileSync(storesPath, JSON.stringify(data, null, 2));
-    res.status(201).json(newStore);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar loja' });
-  }
+  const stores = readStores();
+  const newStore = req.body;
+
+  // Gera um ID único seguindo o mesmo padrão
+  newStore.id = crypto.randomBytes(20).toString('hex');
+  
+  stores.push(newStore);
+  writeStores(stores);
+  
+  res.status(201).json(newStore);
 });
 
-// PUT /stores/{id}
 /**
  * @swagger
  * /stores/{id}:
  *   put:
- *     summary: Atualiza uma loja
+ *     summary: Atualiza uma loja existente
  *     tags: [Stores]
  *     parameters:
  *       - in: path
@@ -182,44 +146,38 @@ router.post('/', (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: ID da loja
+ *         description: ID da loja a ser atualizada
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewStore'
+ *             $ref: '#/components/schemas/Store'
  *     responses:
  *       200:
- *         description: Loja atualizada
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Store'
+ *         description: Loja atualizada com sucesso.
  *       404:
- *         description: Loja não encontrada
+ *         description: Loja não encontrada.
  */
 router.put('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(storesPath, 'utf-8'));
-    const index = data.stores.findIndex(s => s.id === req.params.id);
-    if (index === -1) {
-      return res.status(404).json({ error: 'Loja não encontrada' });
-    }
-    data.stores[index] = { ...data.stores[index], ...req.body };
-    fs.writeFileSync(storesPath, JSON.stringify(data, null, 2));
-    res.json(data.stores[index]);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao atualizar loja' });
+  const stores = readStores();
+  const index = stores.findIndex(s => s.id === req.params.id);
+
+  if (index !== -1) {
+    // Atualiza a loja mantendo o ID original
+    stores[index] = { ...stores[index], ...req.body, id: req.params.id };
+    writeStores(stores);
+    res.status(200).json(stores[index]);
+  } else {
+    res.status(404).send('Loja não encontrada.');
   }
 });
 
-// DELETE /stores/{id}
 /**
  * @swagger
  * /stores/{id}:
  *   delete:
- *     summary: Remove uma loja
+ *     summary: Deleta uma loja
  *     tags: [Stores]
  *     parameters:
  *       - in: path
@@ -227,30 +185,23 @@ router.put('/:id', (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: ID da loja
+ *         description: ID da loja a ser deletada
  *     responses:
  *       200:
- *         description: Loja removida
+ *         description: Loja deletada com sucesso.
  *       404:
- *         description: Loja não encontrada
+ *         description: Loja não encontrada.
  */
 router.delete('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(storesPath, 'utf-8'));
-    const index = data.stores.findIndex(s => s.id === req.params.id);
-    if (index === -1) {
-      return res.status(404).json({ error: 'Loja não encontrada' });
-    }
-    data.stores.splice(index, 1);
-    fs.writeFileSync(storesPath, JSON.stringify(data, null, 2));
-    res.json({ message: 'Loja removida com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao remover loja' });
+  let stores = readStores();
+  const filteredStores = stores.filter(s => s.id !== req.params.id);
+
+  if (stores.length !== filteredStores.length) {
+    writeStores(filteredStores);
+    res.status(200).send('Loja deletada com sucesso.');
+  } else {
+    res.status(404).send('Loja não encontrada.');
   }
 });
-
-function generateId() {
-  return Math.random().toString(36).substr(2, 9);
-}
 
 module.exports = router;

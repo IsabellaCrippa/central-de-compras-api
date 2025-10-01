@@ -2,8 +2,20 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
-const suppliersPath = path.join(__dirname, '../data/supplier.json');
+const dataPath = path.join(__dirname, '..', 'data', 'supplier.json');
+
+// Função auxiliar para ler os dados do JSON
+const readSuppliers = () => {
+  const data = fs.readFileSync(dataPath, 'utf8');
+  return JSON.parse(data);
+};
+
+// Função auxiliar para escrever os dados no JSON
+const writeSuppliers = (data) => {
+  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+};
 
 /**
  * @swagger
@@ -15,7 +27,6 @@ const suppliersPath = path.join(__dirname, '../data/supplier.json');
  *         id:
  *           type: string
  *           description: ID único do fornecedor
- *           example: "7a6cc1282c5f6ec0235acd2bfa788145aa2a67fd"
  *         supplier_name:
  *           type: string
  *           example: "Judite Heeler"
@@ -32,28 +43,6 @@ const suppliersPath = path.join(__dirname, '../data/supplier.json');
  *           type: string
  *           enum: [on, off]
  *           example: "on"
- *     NewSupplier:
- *       type: object
- *       required:
- *         - supplier_name
- *         - contact_email
- *       properties:
- *         supplier_name:
- *           type: string
- *           example: "Novo Fornecedor"
- *         supplier_category:
- *           type: string
- *           example: "Eletronicos"
- *         contact_email:
- *           type: string
- *           example: "novo@fornecedor.com"
- *         phone_number:
- *           type: string
- *           example: "48 1234 5678"
- *         status:
- *           type: string
- *           enum: [on, off]
- *           example: "on"
  */
 
 /**
@@ -63,16 +52,15 @@ const suppliersPath = path.join(__dirname, '../data/supplier.json');
  *   description: Gerenciamento de fornecedores
  */
 
-// GET /suppliers
 /**
  * @swagger
  * /suppliers:
  *   get:
- *     summary: Retorna todos os fornecedores
+ *     summary: Lista todos os fornecedores
  *     tags: [Suppliers]
  *     responses:
  *       200:
- *         description: Lista de fornecedores
+ *         description: Lista de fornecedores retornada com sucesso.
  *         content:
  *           application/json:
  *             schema:
@@ -81,20 +69,15 @@ const suppliersPath = path.join(__dirname, '../data/supplier.json');
  *                 $ref: '#/components/schemas/Supplier'
  */
 router.get('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(suppliersPath, 'utf-8'));
-    res.json(data.suppliers);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao ler fornecedores' });
-  }
+  const suppliers = readSuppliers();
+  res.status(200).json(suppliers);
 });
 
-// GET /suppliers/{id}
 /**
  * @swagger
  * /suppliers/{id}:
  *   get:
- *     summary: Busca fornecedor por ID
+ *     summary: Busca um fornecedor pelo ID
  *     tags: [Suppliers]
  *     parameters:
  *       - in: path
@@ -105,28 +88,20 @@ router.get('/', (req, res) => {
  *         description: ID do fornecedor
  *     responses:
  *       200:
- *         description: Fornecedor encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Supplier'
+ *         description: Fornecedor encontrado.
  *       404:
- *         description: Fornecedor não encontrado
+ *         description: Fornecedor não encontrado.
  */
 router.get('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(suppliersPath, 'utf-8'));
-    const supplier = data.suppliers.find(s => s.id === req.params.id);
-    if (!supplier) {
-      return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    }
-    res.json(supplier);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar fornecedor' });
+  const suppliers = readSuppliers();
+  const supplier = suppliers.find(s => s.id === req.params.id);
+  if (supplier) {
+    res.status(200).json(supplier);
+  } else {
+    res.status(404).send('Fornecedor não encontrado.');
   }
 });
 
-// POST /suppliers
 /**
  * @swagger
  * /suppliers:
@@ -138,36 +113,29 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewSupplier'
+ *             $ref: '#/components/schemas/Supplier'
  *     responses:
  *       201:
- *         description: Fornecedor criado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Supplier'
+ *         description: Fornecedor criado com sucesso.
  */
 router.post('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(suppliersPath, 'utf-8'));
-    const newSupplier = {
-      id: generateId(),
-      ...req.body
-    };
-    data.suppliers.push(newSupplier);
-    fs.writeFileSync(suppliersPath, JSON.stringify(data, null, 2));
-    res.status(201).json(newSupplier);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar fornecedor' });
-  }
+  const suppliers = readSuppliers();
+  const newSupplier = req.body;
+
+  // Gera um ID único seguindo o mesmo padrão do users.js
+  newSupplier.id = crypto.randomBytes(20).toString('hex');
+  
+  suppliers.push(newSupplier);
+  writeSuppliers(suppliers);
+  
+  res.status(201).json(newSupplier);
 });
 
-// PUT /suppliers/{id}
 /**
  * @swagger
  * /suppliers/{id}:
  *   put:
- *     summary: Atualiza um fornecedor
+ *     summary: Atualiza um fornecedor existente
  *     tags: [Suppliers]
  *     parameters:
  *       - in: path
@@ -175,44 +143,38 @@ router.post('/', (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: ID do fornecedor
+ *         description: ID do fornecedor a ser atualizado
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewSupplier'
+ *             $ref: '#/components/schemas/Supplier'
  *     responses:
  *       200:
- *         description: Fornecedor atualizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Supplier'
+ *         description: Fornecedor atualizado com sucesso.
  *       404:
- *         description: Fornecedor não encontrado
+ *         description: Fornecedor não encontrado.
  */
 router.put('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(suppliersPath, 'utf-8'));
-    const index = data.suppliers.findIndex(s => s.id === req.params.id);
-    if (index === -1) {
-      return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    }
-    data.suppliers[index] = { ...data.suppliers[index], ...req.body };
-    fs.writeFileSync(suppliersPath, JSON.stringify(data, null, 2));
-    res.json(data.suppliers[index]);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao atualizar fornecedor' });
+  const suppliers = readSuppliers();
+  const index = suppliers.findIndex(s => s.id === req.params.id);
+
+  if (index !== -1) {
+    // Atualiza o fornecedor mantendo o ID original
+    suppliers[index] = { ...suppliers[index], ...req.body, id: req.params.id };
+    writeSuppliers(suppliers);
+    res.status(200).json(suppliers[index]);
+  } else {
+    res.status(404).send('Fornecedor não encontrado.');
   }
 });
 
-// DELETE /suppliers/{id}
 /**
  * @swagger
  * /suppliers/{id}:
  *   delete:
- *     summary: Remove um fornecedor
+ *     summary: Deleta um fornecedor
  *     tags: [Suppliers]
  *     parameters:
  *       - in: path
@@ -220,30 +182,23 @@ router.put('/:id', (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: ID do fornecedor
+ *         description: ID do fornecedor a ser deletado
  *     responses:
  *       200:
- *         description: Fornecedor removido
+ *         description: Fornecedor deletado com sucesso.
  *       404:
- *         description: Fornecedor não encontrado
+ *         description: Fornecedor não encontrado.
  */
 router.delete('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(suppliersPath, 'utf-8'));
-    const index = data.suppliers.findIndex(s => s.id === req.params.id);
-    if (index === -1) {
-      return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    }
-    data.suppliers.splice(index, 1);
-    fs.writeFileSync(suppliersPath, JSON.stringify(data, null, 2));
-    res.json({ message: 'Fornecedor removido com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao remover fornecedor' });
+  let suppliers = readSuppliers();
+  const filteredSuppliers = suppliers.filter(s => s.id !== req.params.id);
+
+  if (suppliers.length !== filteredSuppliers.length) {
+    writeSuppliers(filteredSuppliers);
+    res.status(200).send('Fornecedor deletado com sucesso.');
+  } else {
+    res.status(404).send('Fornecedor não encontrado.');
   }
 });
-
-function generateId() {
-  return Math.random().toString(36).substr(2, 9);
-}
 
 module.exports = router;

@@ -1,9 +1,22 @@
 const express = require('express');
+const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
-const router = express.Router();
-const FILE_PATH = path.join(__dirname, '../data/order.json');
+// Caminho para o arquivo JSON - seguindo o padrão do users.js
+const dataPath = path.join(__dirname, '..', 'data', 'order.json');
+
+// Função auxiliar para ler os dados do JSON
+const readOrders = () => {
+  const data = fs.readFileSync(dataPath, 'utf8');
+  return JSON.parse(data);
+};
+
+// Função auxiliar para escrever os dados no JSON
+const writeOrders = (data) => {
+  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+};
 
 /**
  * @swagger
@@ -15,7 +28,6 @@ const FILE_PATH = path.join(__dirname, '../data/order.json');
  *         id:
  *           type: string
  *           description: ID único do pedido
- *           example: "abc123xyz"
  *         customer:
  *           type: string
  *           example: "João Silva"
@@ -26,33 +38,8 @@ const FILE_PATH = path.join(__dirname, '../data/order.json');
  *             properties:
  *               productId:
  *                 type: string
- *                 example: "prod123"
  *               quantity:
  *                 type: number
- *                 example: 2
- *         total:
- *           type: number
- *           example: 299.9
- *     NewOrder:
- *       type: object
- *       required:
- *         - customer
- *         - items
- *       properties:
- *         customer:
- *           type: string
- *           example: "João Silva"
- *         items:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               productId:
- *                 type: string
- *                 example: "prod123"
- *               quantity:
- *                 type: number
- *                 example: 2
  *         total:
  *           type: number
  *           example: 299.9
@@ -65,16 +52,15 @@ const FILE_PATH = path.join(__dirname, '../data/order.json');
  *   description: Gerenciamento de pedidos
  */
 
-// GET /orders
 /**
  * @swagger
  * /orders:
  *   get:
- *     summary: Retorna todos os pedidos
+ *     summary: Lista todos os pedidos
  *     tags: [Orders]
  *     responses:
  *       200:
- *         description: Lista de pedidos
+ *         description: Lista de pedidos retornada com sucesso.
  *         content:
  *           application/json:
  *             schema:
@@ -83,20 +69,15 @@ const FILE_PATH = path.join(__dirname, '../data/order.json');
  *                 $ref: '#/components/schemas/Order'
  */
 router.get('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    res.json(data.orders || []);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao ler pedidos' });
-  }
+  const orders = readOrders();
+  res.status(200).json(orders);
 });
 
-// GET /orders/{id}
 /**
  * @swagger
  * /orders/{id}:
  *   get:
- *     summary: Busca pedido por ID
+ *     summary: Busca um pedido pelo ID
  *     tags: [Orders]
  *     parameters:
  *       - in: path
@@ -107,26 +88,20 @@ router.get('/', (req, res) => {
  *         description: ID do pedido
  *     responses:
  *       200:
- *         description: Pedido encontrado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Order'
+ *         description: Pedido encontrado.
  *       404:
- *         description: Pedido não encontrado
+ *         description: Pedido não encontrado.
  */
 router.get('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const order = (data.orders || []).find(o => o.id === req.params.id);
-    if (!order) return res.status(404).json({ error: 'Pedido não encontrado' });
-    res.json(order);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar pedido' });
+  const orders = readOrders();
+  const order = orders.find(o => o.id === req.params.id);
+  if (order) {
+    res.status(200).json(order);
+  } else {
+    res.status(404).send('Pedido não encontrado.');
   }
 });
 
-// POST /orders
 /**
  * @swagger
  * /orders:
@@ -138,37 +113,29 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewOrder'
+ *             $ref: '#/components/schemas/Order'
  *     responses:
  *       201:
- *         description: Pedido criado com sucesso
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Order'
+ *         description: Pedido criado com sucesso.
  */
 router.post('/', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const newOrder = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...req.body
-    };
-    data.orders = data.orders || [];
-    data.orders.push(newOrder);
-    fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-    res.status(201).json(newOrder);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar pedido' });
-  }
+  const orders = readOrders();
+  const newOrder = req.body;
+
+  // Gera um ID único seguindo o mesmo padrão do users.js
+  newOrder.id = crypto.randomBytes(20).toString('hex');
+  
+  orders.push(newOrder);
+  writeOrders(orders);
+  
+  res.status(201).json(newOrder);
 });
 
-// PUT /orders/{id}
 /**
  * @swagger
  * /orders/{id}:
  *   put:
- *     summary: Atualiza um pedido
+ *     summary: Atualiza um pedido existente
  *     tags: [Orders]
  *     parameters:
  *       - in: path
@@ -176,42 +143,38 @@ router.post('/', (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: ID do pedido
+ *         description: ID do pedido a ser atualizado
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewOrder'
+ *             $ref: '#/components/schemas/Order'
  *     responses:
  *       200:
- *         description: Pedido atualizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Order'
+ *         description: Pedido atualizado com sucesso.
  *       404:
- *         description: Pedido não encontrado
+ *         description: Pedido não encontrado.
  */
 router.put('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const index = (data.orders || []).findIndex(o => o.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'Pedido não encontrado' });
-    data.orders[index] = { ...data.orders[index], ...req.body };
-    fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-    res.json(data.orders[index]);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao atualizar pedido' });
+  const orders = readOrders();
+  const index = orders.findIndex(o => o.id === req.params.id);
+
+  if (index !== -1) {
+    // Atualiza o pedido mantendo o ID original
+    orders[index] = { ...orders[index], ...req.body, id: req.params.id };
+    writeOrders(orders);
+    res.status(200).json(orders[index]);
+  } else {
+    res.status(404).send('Pedido não encontrado.');
   }
 });
 
-// DELETE /orders/{id}
 /**
  * @swagger
  * /orders/{id}:
  *   delete:
- *     summary: Remove um pedido
+ *     summary: Deleta um pedido
  *     tags: [Orders]
  *     parameters:
  *       - in: path
@@ -219,25 +182,22 @@ router.put('/:id', (req, res) => {
  *         schema:
  *           type: string
  *         required: true
- *         description: ID do pedido
+ *         description: ID do pedido a ser deletado
  *     responses:
  *       200:
- *         description: Pedido removido
+ *         description: Pedido deletado com sucesso.
  *       404:
- *         description: Pedido não encontrado
+ *         description: Pedido não encontrado.
  */
 router.delete('/:id', (req, res) => {
-  try {
-    const data = JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
-    const orders = data.orders || [];
-    const index = orders.findIndex(o => o.id === req.params.id);
-    if (index === -1) return res.status(404).json({ error: 'Pedido não encontrado' });
-    orders.splice(index, 1);
-    data.orders = orders;
-    fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2));
-    res.json({ message: 'Pedido removido com sucesso' });
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao remover pedido' });
+  let orders = readOrders();
+  const filteredOrders = orders.filter(o => o.id !== req.params.id);
+
+  if (orders.length !== filteredOrders.length) {
+    writeOrders(filteredOrders);
+    res.status(200).send('Pedido deletado com sucesso.');
+  } else {
+    res.status(404).send('Pedido não encontrado.');
   }
 });
 
