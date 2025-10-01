@@ -1,7 +1,9 @@
 const express = require('express');
+const path = require('path');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const userRoutes = require('./src/routes/users');
+const campaignRoutes = require('./src/routes/campaign');
 
 const app = express();
 const port = 3000;
@@ -107,12 +109,14 @@ const options = {
   },
   
   apis: ['/src/routes/*.js'],
+  apis: [path.join(__dirname, '/src/routes/*.js')],
 };
 
 const swaggerDocs = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.use('/users', userRoutes);
+app.use('/campaign', campaignRoutes);
 
 
 app.get('/', (req, res) => {
