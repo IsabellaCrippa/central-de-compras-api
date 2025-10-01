@@ -4,16 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Caminho para o arquivo JSON - CORRIGIDO seguindo o padrão do users.js
+// Caminho para o arquivo JSON
 const dataPath = path.join(__dirname, '..', 'data', 'product.json');
 
-// Função auxiliar para ler os dados do JSON
+//ler os dados do JSON
 const readProducts = () => {
   const data = fs.readFileSync(dataPath, 'utf8');
   return JSON.parse(data);
 };
 
-// Função auxiliar para escrever os dados no JSON
+//escrever os dados no JSON
 const writeProducts = (data) => {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 };
@@ -45,6 +45,7 @@ router.get('/', (req, res) => {
   const products = readProducts();
   res.status(200).json(products);
 });
+// lista todos os produtos
 
 /**
  * @swagger
@@ -74,6 +75,7 @@ router.get('/:id', (req, res) => {
     res.status(404).send('Produto não encontrado.');
   }
 });
+// busca produto por id 
 
 /**
  * @swagger
@@ -94,15 +96,12 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   const products = readProducts();
   const newProduct = req.body;
-
-  // Gera um ID único seguindo o mesmo padrão do users.js
   newProduct.id = crypto.randomBytes(20).toString('hex');
-  
   products.push(newProduct);
   writeProducts(products);
-  
   res.status(201).json(newProduct);
 });
+// cria novo produto
 
 /**
  * @swagger
@@ -134,7 +133,6 @@ router.put('/:id', (req, res) => {
   const index = products.findIndex(p => p.id === req.params.id);
 
   if (index !== -1) {
-    // Atualiza o produto mantendo o ID original
     products[index] = { ...products[index], ...req.body, id: req.params.id };
     writeProducts(products);
     res.status(200).json(products[index]);
@@ -142,6 +140,7 @@ router.put('/:id', (req, res) => {
     res.status(404).send('Produto não encontrado.');
   }
 });
+//atualiza produto
 
 /**
  * @swagger
@@ -162,6 +161,7 @@ router.put('/:id', (req, res) => {
  *       404:
  *         description: Produto não encontrado.
  */
+
 router.delete('/:id', (req, res) => {
   let products = readProducts();
   const filteredProducts = products.filter(p => p.id !== req.params.id);
@@ -173,5 +173,6 @@ router.delete('/:id', (req, res) => {
     res.status(404).send('Produto não encontrado.');
   }
 });
+//deleta produto
 
 module.exports = router;

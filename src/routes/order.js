@@ -4,16 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Caminho para o arquivo JSON - seguindo o padrão do users.js
+// Caminho para o arquivo JSON 
 const dataPath = path.join(__dirname, '..', 'data', 'order.json');
 
-// Função auxiliar para ler os dados do JSON
+//ler os dados do JSON
 const readOrders = () => {
   const data = fs.readFileSync(dataPath, 'utf8');
   return JSON.parse(data);
 };
 
-// Função auxiliar para escrever os dados no JSON
+//escrever os dados no JSON
 const writeOrders = (data) => {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 };
@@ -72,6 +72,7 @@ router.get('/', (req, res) => {
   const orders = readOrders();
   res.status(200).json(orders);
 });
+// lista todos os pedidos
 
 /**
  * @swagger
@@ -101,6 +102,7 @@ router.get('/:id', (req, res) => {
     res.status(404).send('Pedido não encontrado.');
   }
 });
+// busca pedido por id
 
 /**
  * @swagger
@@ -122,14 +124,13 @@ router.post('/', (req, res) => {
   const orders = readOrders();
   const newOrder = req.body;
 
-  // Gera um ID único seguindo o mesmo padrão do users.js
   newOrder.id = crypto.randomBytes(20).toString('hex');
-  
   orders.push(newOrder);
   writeOrders(orders);
-  
   res.status(201).json(newOrder);
+
 });
+// cria novo pedido
 
 /**
  * @swagger
@@ -161,7 +162,6 @@ router.put('/:id', (req, res) => {
   const index = orders.findIndex(o => o.id === req.params.id);
 
   if (index !== -1) {
-    // Atualiza o pedido mantendo o ID original
     orders[index] = { ...orders[index], ...req.body, id: req.params.id };
     writeOrders(orders);
     res.status(200).json(orders[index]);
@@ -169,6 +169,7 @@ router.put('/:id', (req, res) => {
     res.status(404).send('Pedido não encontrado.');
   }
 });
+//atualiza pedido
 
 /**
  * @swagger
@@ -200,5 +201,6 @@ router.delete('/:id', (req, res) => {
     res.status(404).send('Pedido não encontrado.');
   }
 });
+//deleta pedido
 
 module.exports = router;
