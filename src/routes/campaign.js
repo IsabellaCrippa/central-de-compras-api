@@ -21,6 +21,64 @@ const writeCampaign = (data) => {
 // Documentação para o Swagger
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     Campaign:
+ *       type: object
+ *       required:
+ *         - supplier_id
+ *         - name
+ *         - start_date
+ *         - end_date
+ *         - discount_percentage
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: Auto-generated ID of the campaign
+ *         supplier_id:
+ *           type: string
+ *           description: ID of the supplier associated with the campaign
+ *         name:
+ *           type: string
+ *           description: Name of the campaign
+ *         start_date:
+ *           type: string
+ *           format: date-time
+ *           description: Start date and time of the campaign
+ *         end_date:
+ *           type: string
+ *           format: date-time
+ *           description: End date and time of the campaign
+ *         discount_percentage:
+ *           type: string
+ *           description: Discount percentage for the campaign
+ *     NewCampaign:
+ *       type: object
+ *       required:
+ *         - supplier_id
+ *         - name
+ *         - start_date
+ *         - end_date
+ *         - discount_percentage
+ *       properties:
+ *         supplier_id:
+ *           type: string
+ *           description: ID of the supplier associated with the campaign
+ *         name:
+ *           type: string
+ *           description: Name of the campaign
+ *         start_date:
+ *           type: string
+ *           format: date-time
+ *           description: Start date and time of the campaign
+ *         end_date:
+ *           type: string
+ *           format: date-time
+ *           description: End date and time of the campaign
+ *         discount_percentage:
+ *           type: string
+ *           description: Discount percentage for the campaign
+ * 
  * tags:
  *   name: Campanhas
  *   description: Gerenciamento de campanhas da API
@@ -87,7 +145,7 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewUser'
+ *             $ref: '#/components/schemas/NewCampaign'
  *     responses:
  *       201:
  *         description: Campanha criado com sucesso.

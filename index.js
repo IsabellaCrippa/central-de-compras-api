@@ -5,8 +5,6 @@ const swaggerUi = require('swagger-ui-express');
 const userRoutes = require('./src/routes/users');
 const storeRoutes = require('./src/routes/store');
 const supplierRoutes = require('./src/routes/supplier');
-
-// 🔹 importar as novas rotas
 const productRoutes = require('./src/routes/product');
 const orderRoutes = require('./src/routes/order');
 const campaignRoutes = require('./src/routes/campaign');
@@ -116,13 +114,12 @@ const options = {
 const swaggerDocs = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// 🔹 rotas já existentes
-app.use('/users', userRoutes);
-app.use('/campaign', campaignRoutes);
-app.use('/suppliers', supplierRoutes);
-app.use('/stores', storeRoutes);
-app.use('/products', productRoutes);
-app.use('/orders', orderRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/campaign', campaignRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/stores', storeRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.get('/', (req, res) => {
   res.send('API da Central de Compras funcionando!');
