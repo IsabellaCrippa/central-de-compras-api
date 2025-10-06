@@ -15,9 +15,8 @@ const port = 3000;
 
 app.use(express.json());
 
-// =====================================================
+
 // 🔹 Configuração do Swagger
-// =====================================================
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -43,26 +42,20 @@ const options = {
 const swaggerDocs = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// =====================================================
-// 🔹 Rotas da API (todas com prefixo /api/...)
-// =====================================================
+// 🔹rotas
 app.use('/api/users', userRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/stores', storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 
-// =====================================================
-// 🔹 Rota inicial (teste rápido)
-// =====================================================
+// Rota raiz
 app.get('/', (req, res) => {
-  res.send('🚀 API da Central de Compras funcionando!');
+  res.send('API da Central de Compras funcionando!');
 });
 
-// =====================================================
 // 🔹 Inicialização do servidor
-// =====================================================
 app.listen(port, () => {
-  console.log(`✅ Servidor rodando em: http://localhost:${port}`);
-  console.log(`📘 Documentação Swagger: http://localhost:${port}/api-docs`);
+  console.log(`Servidor rodando em: http://localhost:${port}`);
+  console.log(`Documentação Swagger: http://localhost:${port}/api-docs`);
 });
