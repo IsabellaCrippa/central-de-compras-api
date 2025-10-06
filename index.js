@@ -2,11 +2,11 @@ const express = require('express');
 const path = require('path');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+
+// 🔹 Importar rotas
 const userRoutes = require('./src/routes/users');
 const storeRoutes = require('./src/routes/store');
 const supplierRoutes = require('./src/routes/supplier');
-
-// 🔹 importar as novas rotas
 const productRoutes = require('./src/routes/product');
 const orderRoutes = require('./src/routes/order');
 
@@ -15,6 +15,9 @@ const port = 3000;
 
 app.use(express.json());
 
+// =====================================================
+// 🔹 Configuração do Swagger
+// =====================================================
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -29,7 +32,7 @@ const options = {
     },
     servers: [
       {
-        url: `http://localhost:${port}/api/`,
+        url: `http://localhost:${port}/api`,
         description: 'Servidor de Desenvolvimento',
       },
     ],
@@ -40,18 +43,26 @@ const options = {
 const swaggerDocs = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// 🔹 rotas já existentes
-app.use('/users', userRoutes);
-app.use('/suppliers', supplierRoutes);
-app.use('/stores', storeRoutes);
-app.use('/products', productRoutes);
-app.use('/orders', orderRoutes);
+// =====================================================
+// 🔹 Rotas da API (todas com prefixo /api/...)
+// =====================================================
+app.use('/api/users', userRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/stores', storeRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
+// =====================================================
+// 🔹 Rota inicial (teste rápido)
+// =====================================================
 app.get('/', (req, res) => {
-  res.send('API da Central de Compras funcionando!');
+  res.send('🚀 API da Central de Compras funcionando!');
 });
 
+// =====================================================
+// 🔹 Inicialização do servidor
+// =====================================================
 app.listen(port, () => {
-  console.log(`Servidor rodando em http://localhost:${port}`);
-  console.log(`Documentação da API disponível em http://localhost:${port}/api-docs`);
+  console.log(`✅ Servidor rodando em: http://localhost:${port}`);
+  console.log(`📘 Documentação Swagger: http://localhost:${port}/api-docs`);
 });
