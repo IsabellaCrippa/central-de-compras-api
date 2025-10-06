@@ -27,23 +27,30 @@ const writeStores = (data) => {
  *         id:
  *           type: string
  *           description: ID único da loja
+ *           example: "a1b2c3d4e5"
  *         store_name:
  *           type: string
+ *           description: Nome da loja
  *           example: "Bingo Heeler"
  *         cnpj:
  *           type: string
- *           example: "12.123.123.1234-12"
+ *           description: CNPJ da loja
+ *           example: "12.345.678/0001-90"
  *         address:
  *           type: string
- *           example: "Bandit Hemmer, 42"
+ *           description: Endereço da loja
+ *           example: "Rua Bandit Hemmer, 42"
  *         phone_number:
  *           type: string
- *           example: "48 9696 5858"
+ *           description: Telefone da loja
+ *           example: "48 9696-5858"
  *         contact_email:
  *           type: string
- *           example: "down@bingo.com"
+ *           description: E-mail de contato
+ *           example: "contato@bingo.com"
  *         status:
  *           type: string
+ *           description: Status da loja
  *           enum: [on, off]
  *           example: "on"
  */
@@ -57,7 +64,7 @@ const writeStores = (data) => {
 
 /**
  * @swagger
- * /stores:
+ * /api/stores:
  *   get:
  *     summary: Lista todas as lojas
  *     tags: [Stores]
@@ -78,7 +85,7 @@ router.get('/', (req, res) => {
 
 /**
  * @swagger
- * /stores/{id}:
+ * /api/stores/{id}:
  *   get:
  *     summary: Busca uma loja pelo ID
  *     tags: [Stores]
@@ -92,6 +99,10 @@ router.get('/', (req, res) => {
  *     responses:
  *       200:
  *         description: Loja encontrada.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Store'
  *       404:
  *         description: Loja não encontrada.
  */
@@ -107,7 +118,7 @@ router.get('/:id', (req, res) => {
 
 /**
  * @swagger
- * /stores:
+ * /api/stores:
  *   post:
  *     summary: Cria uma nova loja
  *     tags: [Stores]
@@ -125,7 +136,7 @@ router.post('/', (req, res) => {
   const stores = readStores();
   const newStore = req.body;
 
-  // Gera um ID único seguindo o mesmo padrão
+  // Gera um ID único
   newStore.id = crypto.randomBytes(20).toString('hex');
   
   stores.push(newStore);
@@ -136,7 +147,7 @@ router.post('/', (req, res) => {
 
 /**
  * @swagger
- * /stores/{id}:
+ * /api/stores/{id}:
  *   put:
  *     summary: Atualiza uma loja existente
  *     tags: [Stores]
@@ -164,7 +175,6 @@ router.put('/:id', (req, res) => {
   const index = stores.findIndex(s => s.id === req.params.id);
 
   if (index !== -1) {
-    // Atualiza a loja mantendo o ID original
     stores[index] = { ...stores[index], ...req.body, id: req.params.id };
     writeStores(stores);
     res.status(200).json(stores[index]);
@@ -175,7 +185,7 @@ router.put('/:id', (req, res) => {
 
 /**
  * @swagger
- * /stores/{id}:
+ * /api/stores/{id}:
  *   delete:
  *     summary: Deleta uma loja
  *     tags: [Stores]
