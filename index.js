@@ -19,7 +19,7 @@ const port = 3000;
 app.use(express.json());
 app.use(cors()); 
 
-// Configuração do Swagger com todos os schemas
+// Configuração do Swagger 
 const options = {
   definition: {
     openapi: '3.0.0',
