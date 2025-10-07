@@ -6,44 +6,14 @@ const crypto = require('crypto');
 
 const dataPath = path.join(__dirname, '..', 'data', 'supplier.json');
 
-// Função auxiliar para ler os dados do JSON
 const readSuppliers = () => {
   const data = fs.readFileSync(dataPath, 'utf8');
   return JSON.parse(data);
 };
 
-// Função auxiliar para escrever os dados no JSON
 const writeSuppliers = (data) => {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 };
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     Supplier:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           description: ID único do fornecedor
- *         supplier_name:
- *           type: string
- *           example: "Judite Heeler"
- *         supplier_category:
- *           type: string
- *           example: "Informatica, Seguranca"
- *         contact_email:
- *           type: string
- *           example: "j.heeler@gmail.com"
- *         phone_number:
- *           type: string
- *           example: "48 9696 5858"
- *         status:
- *           type: string
- *           enum: [on, off]
- *           example: "on"
- */
 
 /**
  * @swagger
@@ -66,7 +36,20 @@ const writeSuppliers = (data) => {
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Supplier'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   supplier_name:
+ *                     type: string
+ *                   supplier_category:
+ *                     type: string
+ *                   contact_email:
+ *                     type: string
+ *                   phone_number:
+ *                     type: string
+ *                   status:
+ *                     type: string
  */
 router.get('/', (req, res) => {
   const suppliers = readSuppliers();
@@ -113,7 +96,18 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Supplier'
+ *             type: object
+ *             properties:
+ *               supplier_name:
+ *                 type: string
+ *               supplier_category:
+ *                 type: string
+ *               contact_email:
+ *                 type: string
+ *               phone_number:
+ *                 type: string
+ *               status:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Fornecedor criado com sucesso.
@@ -122,7 +116,6 @@ router.post('/', (req, res) => {
   const suppliers = readSuppliers();
   const newSupplier = req.body;
 
-  // Gera um ID único seguindo o mesmo padrão do users.js
   newSupplier.id = crypto.randomBytes(20).toString('hex');
   
   suppliers.push(newSupplier);
@@ -149,7 +142,18 @@ router.post('/', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Supplier'
+ *             type: object
+ *             properties:
+ *               supplier_name:
+ *                 type: string
+ *               supplier_category:
+ *                 type: string
+ *               contact_email:
+ *                 type: string
+ *               phone_number:
+ *                 type: string
+ *               status:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Fornecedor atualizado com sucesso.
@@ -161,7 +165,6 @@ router.put('/:id', (req, res) => {
   const index = suppliers.findIndex(s => s.id === req.params.id);
 
   if (index !== -1) {
-    // Atualiza o fornecedor mantendo o ID original
     suppliers[index] = { ...suppliers[index], ...req.body, id: req.params.id };
     writeSuppliers(suppliers);
     res.status(200).json(suppliers[index]);

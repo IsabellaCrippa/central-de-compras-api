@@ -4,16 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Caminho para o arquivo JSON
 const dataPath = path.join(__dirname, '..', 'data', 'product.json');
 
-//ler os dados do JSON
 const readProducts = () => {
   const data = fs.readFileSync(dataPath, 'utf8');
   return JSON.parse(data);
 };
 
-//escrever os dados no JSON
 const writeProducts = (data) => {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 };
@@ -39,13 +36,23 @@ const writeProducts = (data) => {
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Product'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   price:
+ *                     type: number
+ *                   stock:
+ *                     type: number
+ *                   category:
+ *                     type: string
  */
 router.get('/', (req, res) => {
   const products = readProducts();
   res.status(200).json(products);
 });
-// lista todos os produtos
 
 /**
  * @swagger
@@ -75,7 +82,6 @@ router.get('/:id', (req, res) => {
     res.status(404).send('Produto não encontrado.');
   }
 });
-// busca produto por id 
 
 /**
  * @swagger
@@ -88,7 +94,16 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewProduct'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               stock:
+ *                 type: number
+ *               category:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Produto criado com sucesso.
@@ -101,7 +116,6 @@ router.post('/', (req, res) => {
   writeProducts(products);
   res.status(201).json(newProduct);
 });
-// cria novo produto
 
 /**
  * @swagger
@@ -121,7 +135,16 @@ router.post('/', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Product'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               stock:
+ *                 type: number
+ *               category:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Produto atualizado com sucesso.
@@ -140,7 +163,6 @@ router.put('/:id', (req, res) => {
     res.status(404).send('Produto não encontrado.');
   }
 });
-//atualiza produto
 
 /**
  * @swagger
@@ -161,7 +183,6 @@ router.put('/:id', (req, res) => {
  *       404:
  *         description: Produto não encontrado.
  */
-
 router.delete('/:id', (req, res) => {
   let products = readProducts();
   const filteredProducts = products.filter(p => p.id !== req.params.id);
@@ -173,6 +194,5 @@ router.delete('/:id', (req, res) => {
     res.status(404).send('Produto não encontrado.');
   }
 });
-//deleta produto
 
 module.exports = router;

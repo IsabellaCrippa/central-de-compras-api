@@ -1,29 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs'); // Módulo para ler e escrever arquivos
-const path = require('path'); // Módulo para lidar com caminhos de arquivos
-const crypto = require('crypto'); // Módulo para gerar IDs únicos
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
-// Caminho para o nosso "banco de dados" JSON
-const dataPath = path.join(__dirname, '..', '..', 'src/data/users.json');
+const dataPath = path.join(__dirname, '..', 'data', 'users.json');
 
-// Função auxiliar para ler os dados do JSON
 const readUsers = () => {
   const data = fs.readFileSync(dataPath, 'utf8');
   return JSON.parse(data);
 };
 
-// Função auxiliar para escrever os dados no JSON
 const writeUsers = (data) => {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 };
 
-// Documentação para o Swagger
 /**
  * @swagger
  * tags:
- *   name: Usuários
- *   description: Gerenciamento de usuários da API
+ *   name: Users
+ *   description: Gerenciamento de usuários
  */
 
 /**
@@ -31,7 +27,7 @@ const writeUsers = (data) => {
  * /users:
  *   get:
  *     summary: Lista todos os usuários
- *     tags: [Usuários]
+ *     tags: [Users]
  *     responses:
  *       200:
  *         description: Lista de usuários retornada com sucesso.
@@ -40,7 +36,18 @@ const writeUsers = (data) => {
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/User'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ *                   status:
+ *                     type: string
  */
 router.get('/', (req, res) => {
   const users = readUsers();
@@ -52,7 +59,7 @@ router.get('/', (req, res) => {
  * /users/{id}:
  *   get:
  *     summary: Busca um usuário pelo ID
- *     tags: [Usuários]
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
@@ -81,13 +88,24 @@ router.get('/:id', (req, res) => {
  * /users:
  *   post:
  *     summary: Cria um novo usuário
- *     tags: [Usuários]
+ *     tags: [Users]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/NewUser'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               pwd:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               status:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso.
@@ -96,7 +114,6 @@ router.post('/', (req, res) => {
   const users = readUsers();
   const newUser = req.body;
 
-  // Gera um ID único e uma senha "hash" simples (para o exemplo)
   newUser.id = crypto.randomBytes(20).toString('hex');
   newUser.pwd = crypto.createHash('sha1').update(newUser.pwd).digest('hex');
   
@@ -111,7 +128,7 @@ router.post('/', (req, res) => {
  * /users/{id}:
  *   put:
  *     summary: Atualiza um usuário existente
- *     tags: [Usuários]
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
@@ -124,7 +141,16 @@ router.post('/', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/User'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               status:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Usuário atualizado com sucesso.
@@ -132,17 +158,16 @@ router.post('/', (req, res) => {
  *         description: Usuário não encontrado.
  */
 router.put('/:id', (req, res) => {
-    const users = readUsers();
-    const index = users.findIndex(u => u.id === req.params.id);
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === req.params.id);
 
-    if (index !== -1) {
-        // Atualiza o usuário mantendo o ID original
-        users[index] = { ...users[index], ...req.body, id: req.params.id };
-        writeUsers(users);
-        res.status(200).json(users[index]);
-    } else {
-        res.status(404).send('Usuário não encontrado.');
-    }
+  if (index !== -1) {
+    users[index] = { ...users[index], ...req.body, id: req.params.id };
+    writeUsers(users);
+    res.status(200).json(users[index]);
+  } else {
+    res.status(404).send('Usuário não encontrado.');
+  }
 });
 
 /**
@@ -150,7 +175,7 @@ router.put('/:id', (req, res) => {
  * /users/{id}:
  *   delete:
  *     summary: Deleta um usuário
- *     tags: [Usuários]
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
@@ -165,15 +190,15 @@ router.put('/:id', (req, res) => {
  *         description: Usuário não encontrado.
  */
 router.delete('/:id', (req, res) => {
-    let users = readUsers();
-    const filteredUsers = users.filter(u => u.id !== req.params.id);
+  let users = readUsers();
+  const filteredUsers = users.filter(u => u.id !== req.params.id);
 
-    if (users.length !== filteredUsers.length) {
-        writeUsers(filteredUsers);
-        res.status(200).send('Usuário deletado com sucesso.');
-    } else {
-        res.status(404).send('Usuário não encontrado.');
-    }
+  if (users.length !== filteredUsers.length) {
+    writeUsers(filteredUsers);
+    res.status(200).send('Usuário deletado com sucesso.');
+  } else {
+    res.status(404).send('Usuário não encontrado.');
+  }
 });
 
 module.exports = router;
