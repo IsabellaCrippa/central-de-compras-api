@@ -4,56 +4,57 @@ const cors = require('cors');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
+// 🔹 Importar rotas
 const userRoutes = require('./src/routes/users');
-const storeRoutes = require('./src/routes/store');
+const campaignRoutes = require('./src/routes/campaign');
 const supplierRoutes = require('./src/routes/supplier');
+const storeRoutes = require('./src/routes/store');
 const productRoutes = require('./src/routes/product');
 const orderRoutes = require('./src/routes/order');
-const campaignRoutes = require('./src/routes/campaign');
 
 const app = express();
 const port = 3000;
 
-app.use(cors()); 
+// 🔹 Middleware
 app.use(express.json());
+app.use(cors()); 
 
+// 🔹 Configuração do Swagger
 const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'API da Central de Compras',
+      title: 'Central de Compras API',
       version: '1.0.0',
       description: 'Documentação da API da Central de Compras',
-      license: { name: 'Licenciado para DAII' },
-      contact: {
-        name: 'Equipe de Desenvolvimento ZETTRA - Isabella, Isabele, Maria Paula',
-      },
     },
     servers: [
       {
-        url: `http://localhost:${port}/api`,
-        description: 'Servidor de Desenvolvimento',
+        url: 'http://localhost:3000',
       },
     ],
   },
-  apis: [path.join(__dirname, '/src/routes/*.js')],
+  apis: ['./src/routes/*.js'], // local dos comentários Swagger
 };
 
-const swaggerDocs = swaggerJsDoc(options);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+const swaggerSpec = swaggerJsDoc(options);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use('/api/users', userRoutes);
-app.use('/api/campaign', campaignRoutes);
-app.use('/api/suppliers', supplierRoutes);
-app.use('/api/stores', storeRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
+// 🔹 Rotas principais (com verificação de existência)
+if (userRoutes) app.use('/api/users', userRoutes);
+if (campaignRoutes) app.use('/api/campaigns', campaignRoutes);
+if (supplierRoutes) app.use('/api/suppliers', supplierRoutes);
+if (storeRoutes) app.use('/api/stores', storeRoutes);
+if (productRoutes) app.use('/api/products', productRoutes);
+if (orderRoutes) app.use('/api/orders', orderRoutes);
 
+// 🔹 Rota raiz
 app.get('/', (req, res) => {
-  res.send('API da Central de Compras funcionando!');
+  res.send('API da Central de Compras rodando com sucesso!');
 });
 
+// 🔹 Servidor
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
-  console.log(`Documentação da API disponível em http://localhost:${port}/api-docs`);
+  console.log(`Swagger disponível em http://localhost:${port}/api-docs`);
 });
