@@ -6,8 +6,7 @@ const swaggerUi = require('swagger-ui-express');
 
 // 🔹 Importar rotas
 const userRoutes = require('./src/routes/users');
-const campaignRoutes = require('./src/routes/campaign');
-const supplierRoutes = require('./src/routes/supplier');
+//const supplierRoutes = require('./src/routes/supplier');//
 const storeRoutes = require('./src/routes/store');
 const productRoutes = require('./src/routes/product');
 const orderRoutes = require('./src/routes/order');
@@ -34,19 +33,18 @@ const options = {
       },
     ],
   },
-  apis: ['./src/routes/*.js'], // local dos comentários Swagger
+  apis: ['./src/routes/*.js'],
 };
 
 const swaggerSpec = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// 🔹 Rotas principais (com verificação de existência)
-if (userRoutes) app.use('/api/users', userRoutes);
-if (campaignRoutes) app.use('/api/campaigns', campaignRoutes);
-if (supplierRoutes) app.use('/api/suppliers', supplierRoutes);
-if (storeRoutes) app.use('/api/stores', storeRoutes);
-if (productRoutes) app.use('/api/products', productRoutes);
-if (orderRoutes) app.use('/api/orders', orderRoutes);
+// 🔹 Rotas principais (SEM prefixo /api)
+if (userRoutes) app.use('/users', userRoutes);
+//if (supplierRoutes) app.use('/suppliers', supplierRoutes);//
+if (storeRoutes) app.use('/stores', storeRoutes);
+if (productRoutes) app.use('/products', productRoutes);
+if (orderRoutes) app.use('/orders', orderRoutes);
 
 // 🔹 Rota raiz
 app.get('/', (req, res) => {
