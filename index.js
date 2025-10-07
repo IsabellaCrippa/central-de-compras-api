@@ -6,7 +6,7 @@ const swaggerUi = require('swagger-ui-express');
 
 // 🔹 Importar rotas
 const userRoutes = require('./src/routes/users');
-//const supplierRoutes = require('./src/routes/supplier');//
+const supplierRoutes = require('./src/routes/supplier');
 const storeRoutes = require('./src/routes/store');
 const productRoutes = require('./src/routes/product');
 const orderRoutes = require('./src/routes/order');
@@ -40,9 +40,9 @@ const options = {
 const swaggerSpec = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// 🔹 Rotas principais (SEM prefixo /api)
+// 🔹 Rotas principais
 if (userRoutes) app.use('/users', userRoutes);
-//if (supplierRoutes) app.use('/suppliers', supplierRoutes);//
+if (supplierRoutes) app.use('/suppliers', supplierRoutes);
 if (storeRoutes) app.use('/stores', storeRoutes);
 if (productRoutes) app.use('/products', productRoutes);
 if (orderRoutes) app.use('/orders', orderRoutes);
