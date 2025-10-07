@@ -4,7 +4,7 @@ const cors = require('cors');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
-// 🔹 Importar rotas
+// Importar rotas
 const userRoutes = require('./src/routes/users');
 const supplierRoutes = require('./src/routes/supplier');
 const storeRoutes = require('./src/routes/store');
@@ -15,11 +15,11 @@ const campaignRoutes = require('./src/routes/campaign');
 const app = express();
 const port = 3000;
 
-// 🔹 Middleware
+// Middleware
 app.use(express.json());
 app.use(cors()); 
 
-// 🔹 Configuração do Swagger
+// Configuração do Swagger
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -40,19 +40,19 @@ const options = {
 const swaggerSpec = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// 🔹 Rotas principais
+// Rotas principais
 if (userRoutes) app.use('/users', userRoutes);
 if (supplierRoutes) app.use('/suppliers', supplierRoutes);
 if (storeRoutes) app.use('/stores', storeRoutes);
 if (productRoutes) app.use('/products', productRoutes);
 if (orderRoutes) app.use('/orders', orderRoutes);
 
-// 🔹 Rota raiz
+// Rota raiz
 app.get('/', (req, res) => {
   res.send('API da Central de Compras rodando com sucesso!');
 });
 
-// 🔹 Servidor
+// Servidor
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
   console.log(`Swagger disponível em http://localhost:${port}/api-docs`);
