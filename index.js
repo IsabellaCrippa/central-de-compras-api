@@ -10,6 +10,7 @@ const userRoutes = require('./src/routes/users');
 const storeRoutes = require('./src/routes/store');
 const productRoutes = require('./src/routes/product');
 const orderRoutes = require('./src/routes/order');
+const campaignRoutes = require('./src/routes/campaign');
 
 const app = express();
 const port = 3000;
