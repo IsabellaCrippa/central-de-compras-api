@@ -7,12 +7,26 @@ const crypto = require('crypto');
 const dataPath = path.join(__dirname, '..', 'data', 'product.json');
 
 const readProducts = () => {
-  const data = fs.readFileSync(dataPath, 'utf8');
-  return JSON.parse(data);
+  try {
+    if (!fs.existsSync(dataPath)) {
+      const initialData = [];
+      fs.writeFileSync(dataPath, JSON.stringify(initialData, null, 2));
+      return initialData;
+    }
+    const data = fs.readFileSync(dataPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Erro ao ler arquivo:', error);
+    return [];
+  }
 };
 
 const writeProducts = (data) => {
-  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Erro ao escrever arquivo:', error);
+  }
 };
 
 /**
@@ -79,7 +93,7 @@ router.get('/:id', (req, res) => {
   if (product) {
     res.status(200).json(product);
   } else {
-    res.status(404).send('Produto não encontrado.');
+    res.status(404).json({ error: 'Produto não encontrado.' });
   }
 });
 
@@ -107,10 +121,17 @@ router.get('/:id', (req, res) => {
  *     responses:
  *       201:
  *         description: Produto criado com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  */
 router.post('/', (req, res) => {
   const products = readProducts();
   const newProduct = req.body;
+
+  if (!newProduct.name || newProduct.price === undefined || newProduct.stock === undefined) {
+    return res.status(400).json({ error: 'Campos obrigatórios: name, price, stock' });
+  }
+
   newProduct.id = crypto.randomBytes(20).toString('hex');
   products.push(newProduct);
   writeProducts(products);
@@ -160,7 +181,7 @@ router.put('/:id', (req, res) => {
     writeProducts(products);
     res.status(200).json(products[index]);
   } else {
-    res.status(404).send('Produto não encontrado.');
+    res.status(404).json({ error: 'Produto não encontrado.' });
   }
 });
 
@@ -189,9 +210,9 @@ router.delete('/:id', (req, res) => {
 
   if (products.length !== filteredProducts.length) {
     writeProducts(filteredProducts);
-    res.status(200).send('Produto deletado com sucesso.');
+    res.status(200).json({ message: 'Produto deletado com sucesso.' });
   } else {
-    res.status(404).send('Produto não encontrado.');
+    res.status(404).json({ error: 'Produto não encontrado.' });
   }
 });
 

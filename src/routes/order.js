@@ -4,46 +4,30 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Caminho para o arquivo JSON 
 const dataPath = path.join(__dirname, '..', 'data', 'order.json');
 
-//ler os dados do JSON
 const readOrders = () => {
-  const data = fs.readFileSync(dataPath, 'utf8');
-  return JSON.parse(data);
+  try {
+    if (!fs.existsSync(dataPath)) {
+      const initialData = [];
+      fs.writeFileSync(dataPath, JSON.stringify(initialData, null, 2));
+      return initialData;
+    }
+    const data = fs.readFileSync(dataPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Erro ao ler arquivo:', error);
+    return [];
+  }
 };
 
-//escrever os dados no JSON
 const writeOrders = (data) => {
-  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Erro ao escrever arquivo:', error);
+  }
 };
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     Order:
- *       type: object
- *       properties:
- *         id:
- *           type: string
- *           description: ID único do pedido
- *         customer:
- *           type: string
- *           example: "João Silva"
- *         items:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               productId:
- *                 type: string
- *               quantity:
- *                 type: number
- *         total:
- *           type: number
- *           example: 299.9
- */
 
 /**
  * @swagger
@@ -66,13 +50,28 @@ const writeOrders = (data) => {
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Order'
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   customer:
+ *                     type: string
+ *                   items:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         productId:
+ *                           type: string
+ *                         quantity:
+ *                           type: number
+ *                   total:
+ *                     type: number
  */
 router.get('/', (req, res) => {
   const orders = readOrders();
   res.status(200).json(orders);
 });
-// lista todos os pedidos
 
 /**
  * @swagger
@@ -99,10 +98,9 @@ router.get('/:id', (req, res) => {
   if (order) {
     res.status(200).json(order);
   } else {
-    res.status(404).send('Pedido não encontrado.');
+    res.status(404).json({ error: 'Pedido não encontrado.' });
   }
 });
-// busca pedido por id
 
 /**
  * @swagger
@@ -115,22 +113,40 @@ router.get('/:id', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Order'
+ *             type: object
+ *             properties:
+ *               customer:
+ *                 type: string
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: string
+ *                     quantity:
+ *                       type: number
+ *               total:
+ *                 type: number
  *     responses:
  *       201:
  *         description: Pedido criado com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  */
 router.post('/', (req, res) => {
   const orders = readOrders();
   const newOrder = req.body;
 
+  if (!newOrder.customer || !newOrder.items || !newOrder.total) {
+    return res.status(400).json({ error: 'Campos obrigatórios: customer, items, total' });
+  }
+
   newOrder.id = crypto.randomBytes(20).toString('hex');
   orders.push(newOrder);
   writeOrders(orders);
   res.status(201).json(newOrder);
-
 });
-// cria novo pedido
 
 /**
  * @swagger
@@ -150,7 +166,21 @@ router.post('/', (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Order'
+ *             type: object
+ *             properties:
+ *               customer:
+ *                 type: string
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     productId:
+ *                       type: string
+ *                     quantity:
+ *                       type: number
+ *               total:
+ *                 type: number
  *     responses:
  *       200:
  *         description: Pedido atualizado com sucesso.
@@ -166,10 +196,9 @@ router.put('/:id', (req, res) => {
     writeOrders(orders);
     res.status(200).json(orders[index]);
   } else {
-    res.status(404).send('Pedido não encontrado.');
+    res.status(404).json({ error: 'Pedido não encontrado.' });
   }
 });
-//atualiza pedido
 
 /**
  * @swagger
@@ -196,11 +225,10 @@ router.delete('/:id', (req, res) => {
 
   if (orders.length !== filteredOrders.length) {
     writeOrders(filteredOrders);
-    res.status(200).send('Pedido deletado com sucesso.');
+    res.status(200).json({ message: 'Pedido deletado com sucesso.' });
   } else {
-    res.status(404).send('Pedido não encontrado.');
+    res.status(404).json({ error: 'Pedido não encontrado.' });
   }
 });
-//deleta pedido
 
 module.exports = router;

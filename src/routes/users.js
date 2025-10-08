@@ -7,12 +7,26 @@ const crypto = require('crypto');
 const dataPath = path.join(__dirname, '..', 'data', 'users.json');
 
 const readUsers = () => {
-  const data = fs.readFileSync(dataPath, 'utf8');
-  return JSON.parse(data);
+  try {
+    if (!fs.existsSync(dataPath)) {
+      const initialData = [];
+      fs.writeFileSync(dataPath, JSON.stringify(initialData, null, 2));
+      return initialData;
+    }
+    const data = fs.readFileSync(dataPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Erro ao ler arquivo:', error);
+    return [];
+  }
 };
 
 const writeUsers = (data) => {
-  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Erro ao escrever arquivo:', error);
+  }
 };
 
 /**
@@ -79,7 +93,7 @@ router.get('/:id', (req, res) => {
   if (user) {
     res.status(200).json(user);
   } else {
-    res.status(404).send('Usuário não encontrado.');
+    res.status(404).json({ error: 'Usuário não encontrado.' });
   }
 });
 
@@ -109,13 +123,20 @@ router.get('/:id', (req, res) => {
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  */
 router.post('/', (req, res) => {
   const users = readUsers();
   const newUser = req.body;
 
+  if (!newUser.name || !newUser.email || !newUser.pwd) {
+    return res.status(400).json({ error: 'Campos obrigatórios: name, email, pwd' });
+  }
+
   newUser.id = crypto.randomBytes(20).toString('hex');
-  newUser.pwd = crypto.createHash('sha1').update(newUser.pwd).digest('hex');
+  // Usar SHA256 em vez de SHA1
+  newUser.pwd = crypto.createHash('sha256').update(newUser.pwd).digest('hex');
   
   users.push(newUser);
   writeUsers(users);
@@ -166,7 +187,7 @@ router.put('/:id', (req, res) => {
     writeUsers(users);
     res.status(200).json(users[index]);
   } else {
-    res.status(404).send('Usuário não encontrado.');
+    res.status(404).json({ error: 'Usuário não encontrado.' });
   }
 });
 
@@ -195,9 +216,9 @@ router.delete('/:id', (req, res) => {
 
   if (users.length !== filteredUsers.length) {
     writeUsers(filteredUsers);
-    res.status(200).send('Usuário deletado com sucesso.');
+    res.status(200).json({ message: 'Usuário deletado com sucesso.' });
   } else {
-    res.status(404).send('Usuário não encontrado.');
+    res.status(404).json({ error: 'Usuário não encontrado.' });
   }
 });
 

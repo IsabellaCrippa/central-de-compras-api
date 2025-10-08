@@ -7,12 +7,26 @@ const crypto = require('crypto');
 const dataPath = path.join(__dirname, '..', 'data', 'supplier.json');
 
 const readSuppliers = () => {
-  const data = fs.readFileSync(dataPath, 'utf8');
-  return JSON.parse(data);
+  try {
+    if (!fs.existsSync(dataPath)) {
+      const initialData = [];
+      fs.writeFileSync(dataPath, JSON.stringify(initialData, null, 2));
+      return initialData;
+    }
+    const data = fs.readFileSync(dataPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Erro ao ler arquivo:', error);
+    return [];
+  }
 };
 
 const writeSuppliers = (data) => {
-  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error('Erro ao escrever arquivo:', error);
+  }
 };
 
 /**
@@ -81,7 +95,7 @@ router.get('/:id', (req, res) => {
   if (supplier) {
     res.status(200).json(supplier);
   } else {
-    res.status(404).send('Fornecedor não encontrado.');
+    res.status(404).json({ error: 'Fornecedor não encontrado.' });
   }
 });
 
@@ -111,10 +125,16 @@ router.get('/:id', (req, res) => {
  *     responses:
  *       201:
  *         description: Fornecedor criado com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  */
 router.post('/', (req, res) => {
   const suppliers = readSuppliers();
   const newSupplier = req.body;
+
+  if (!newSupplier.supplier_name || !newSupplier.contact_email) {
+    return res.status(400).json({ error: 'Campos obrigatórios: supplier_name, contact_email' });
+  }
 
   newSupplier.id = crypto.randomBytes(20).toString('hex');
   
@@ -169,7 +189,7 @@ router.put('/:id', (req, res) => {
     writeSuppliers(suppliers);
     res.status(200).json(suppliers[index]);
   } else {
-    res.status(404).send('Fornecedor não encontrado.');
+    res.status(404).json({ error: 'Fornecedor não encontrado.' });
   }
 });
 
@@ -198,9 +218,9 @@ router.delete('/:id', (req, res) => {
 
   if (suppliers.length !== filteredSuppliers.length) {
     writeSuppliers(filteredSuppliers);
-    res.status(200).send('Fornecedor deletado com sucesso.');
+    res.status(200).json({ message: 'Fornecedor deletado com sucesso.' });
   } else {
-    res.status(404).send('Fornecedor não encontrado.');
+    res.status(404).json({ error: 'Fornecedor não encontrado.' });
   }
 });
 

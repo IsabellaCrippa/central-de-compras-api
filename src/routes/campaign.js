@@ -4,10 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Caminho para o arquivo JSON
 const dataPath = path.join(__dirname, '..', 'data', 'campaign.json');
 
-// Função auxiliar para ler os dados do JSON
 const readCampaigns = () => {
   try {
     if (!fs.existsSync(dataPath)) {
@@ -18,13 +16,19 @@ const readCampaigns = () => {
     const data = fs.readFileSync(dataPath, 'utf8');
     return JSON.parse(data);
   } catch (error) {
+    console.error('Erro ao ler arquivo campaign.json:', error);
     return [];
   }
 };
 
-// Função auxiliar para escrever os dados no JSON
 const writeCampaigns = (data) => {
-  fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error('Erro ao escrever arquivo campaign.json:', error);
+    return false;
+  }
 };
 
 /**
@@ -64,8 +68,12 @@ const writeCampaigns = (data) => {
  *                     type: string
  */
 router.get('/', (req, res) => {
-  const campaigns = readCampaigns();
-  res.status(200).json(campaigns);
+  try {
+    const campaigns = readCampaigns();
+    res.status(200).json(campaigns);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 /**
@@ -88,12 +96,16 @@ router.get('/', (req, res) => {
  *         description: Campanha não encontrada.
  */
 router.get('/:id', (req, res) => {
-  const campaigns = readCampaigns();
-  const campaign = campaigns.find(c => c.id === req.params.id);
-  if (campaign) {
-    res.status(200).json(campaign);
-  } else {
-    res.status(404).send('Campanha não encontrada.');
+  try {
+    const campaigns = readCampaigns();
+    const campaign = campaigns.find(c => c.id === req.params.id);
+    if (campaign) {
+      res.status(200).json(campaign);
+    } else {
+      res.status(404).json({ error: 'Campanha não encontrada.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -123,22 +135,37 @@ router.get('/:id', (req, res) => {
  *     responses:
  *       201:
  *         description: Campanha criada com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  */
 router.post('/', (req, res) => {
-  const campaigns = readCampaigns();
-  const newCampaign = req.body;
+  try {
+    const { supplier_id, name, start_date, end_date, discount_percentage } = req.body;
+    
+    if (!supplier_id || !name || !start_date || !end_date || !discount_percentage) {
+      return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+    }
 
-  // Validação dos campos obrigatórios
-  if (!newCampaign.supplier_id || !newCampaign.name || !newCampaign.start_date || !newCampaign.end_date || !newCampaign.discount_percentage) {
-    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+    const campaigns = readCampaigns();
+    const newCampaign = {
+      id: crypto.randomBytes(20).toString('hex'),
+      supplier_id,
+      name,
+      start_date,
+      end_date,
+      discount_percentage
+    };
+    
+    campaigns.push(newCampaign);
+    
+    if (writeCampaigns(campaigns)) {
+      res.status(201).json(newCampaign);
+    } else {
+      res.status(500).json({ error: 'Erro ao salvar campanha' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
-
-  newCampaign.id = crypto.randomBytes(20).toString('hex');
-  
-  campaigns.push(newCampaign);
-  writeCampaigns(campaigns);
-  
-  res.status(201).json(newCampaign);
 });
 
 /**
@@ -178,15 +205,23 @@ router.post('/', (req, res) => {
  *         description: Campanha não encontrada.
  */
 router.put('/:id', (req, res) => {
-  const campaigns = readCampaigns();
-  const index = campaigns.findIndex(c => c.id === req.params.id);
+  try {
+    const campaigns = readCampaigns();
+    const index = campaigns.findIndex(c => c.id === req.params.id);
 
-  if (index !== -1) {
-    campaigns[index] = { ...campaigns[index], ...req.body, id: req.params.id };
-    writeCampaigns(campaigns);
-    res.status(200).json(campaigns[index]);
-  } else {
-    res.status(404).send('Campanha não encontrada.');
+    if (index !== -1) {
+      campaigns[index] = { ...campaigns[index], ...req.body, id: req.params.id };
+      
+      if (writeCampaigns(campaigns)) {
+        res.status(200).json(campaigns[index]);
+      } else {
+        res.status(500).json({ error: 'Erro ao salvar alterações' });
+      }
+    } else {
+      res.status(404).json({ error: 'Campanha não encontrada.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -210,14 +245,21 @@ router.put('/:id', (req, res) => {
  *         description: Campanha não encontrada.
  */
 router.delete('/:id', (req, res) => {
-  let campaigns = readCampaigns();
-  const filteredCampaigns = campaigns.filter(c => c.id !== req.params.id);
+  try {
+    let campaigns = readCampaigns();
+    const filteredCampaigns = campaigns.filter(c => c.id !== req.params.id);
 
-  if (campaigns.length !== filteredCampaigns.length) {
-    writeCampaigns(filteredCampaigns);
-    res.status(200).send('Campanha deletada com sucesso.');
-  } else {
-    res.status(404).send('Campanha não encontrada.');
+    if (campaigns.length !== filteredCampaigns.length) {
+      if (writeCampaigns(filteredCampaigns)) {
+        res.status(200).json({ message: 'Campanha deletada com sucesso.' });
+      } else {
+        res.status(500).json({ error: 'Erro ao salvar alterações' });
+      }
+    } else {
+      res.status(404).json({ error: 'Campanha não encontrada.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
