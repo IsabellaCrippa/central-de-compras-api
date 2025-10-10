@@ -24,8 +24,10 @@ const readUsers = () => {
 const writeUsers = (data) => {
   try {
     fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    return true;
   } catch (error) {
     console.error('Erro ao escrever arquivo:', error);
+    return false;
   }
 };
 
@@ -41,7 +43,7 @@ const writeUsers = (data) => {
  * /users:
  *   get:
  *     summary: Lista todos os usuários
- *     tags:
+ *     tags: [Users]
  *     responses:
  *       200:
  *         description: Lista de usuários retornada com sucesso.
@@ -66,10 +68,13 @@ const writeUsers = (data) => {
  *                     type: string
  */
 router.get('/', (req, res) => {
-  const users = readUsers();
-  // Remove senhas dos resultados
-  const usersWithoutPwd = users.map(({ pwd, ...user }) => user);
-  res.status(200).json(usersWithoutPwd);
+  try {
+    const users = readUsers();
+    const usersWithoutPwd = users.map(({ pwd, ...user }) => user);
+    res.status(200).json(usersWithoutPwd);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 /**
@@ -77,7 +82,7 @@ router.get('/', (req, res) => {
  * /users/{id}:
  *   get:
  *     summary: Busca um usuário pelo ID
- *     tags: 
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
@@ -92,13 +97,17 @@ router.get('/', (req, res) => {
  *         description: Usuário não encontrado.
  */
 router.get('/:id', (req, res) => {
-  const users = readUsers();
-  const user = users.find(u => u.id === req.params.id);
-  if (user) {
-    const { pwd, ...userWithoutPwd } = user;
-    res.status(200).json(userWithoutPwd);
-  } else {
-    res.status(404).json({ error: 'Usuário não encontrado.' });
+  try {
+    const users = readUsers();
+    const user = users.find(u => u.id === req.params.id);
+    if (user) {
+      const { pwd, ...userWithoutPwd } = user;
+      res.status(200).json(userWithoutPwd);
+    } else {
+      res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -107,7 +116,7 @@ router.get('/:id', (req, res) => {
  * /users:
  *   post:
  *     summary: Cria um novo usuário
- *     tags:
+ *     tags: [Users]
  *     requestBody:
  *       required: true
  *       content:
@@ -145,31 +154,37 @@ router.get('/:id', (req, res) => {
  *         description: Email ou usuário já existe.
  */
 router.post('/', (req, res) => {
-  const users = readUsers();
-  const newUser = req.body;
+  try {
+    const users = readUsers();
+    const newUser = req.body;
 
-  if (!newUser.name || !newUser.contact_email || !newUser.user || !newUser.pwd) {
-    return res.status(400).json({ error: 'Campos obrigatórios: name, contact_email, user, pwd' });
-  }
+    if (!newUser.name || !newUser.contact_email || !newUser.user || !newUser.pwd) {
+      return res.status(400).json({ error: 'Campos obrigatórios: name, contact_email, user, pwd' });
+    }
 
-  // Verifica se email ou usuário já existem
-  if (users.some(u => u.contact_email === newUser.contact_email)) {
-    return res.status(409).json({ error: 'Email já cadastrado.' });
-  }
-  if (users.some(u => u.user === newUser.user)) {
-    return res.status(409).json({ error: 'Nome de usuário já existe.' });
-  }
+    if (users.some(u => u.contact_email === newUser.contact_email)) {
+      return res.status(409).json({ error: 'Email já cadastrado.' });
+    }
+    if (users.some(u => u.user === newUser.user)) {
+      return res.status(409).json({ error: 'Nome de usuário já existe.' });
+    }
 
-  newUser.id = crypto.randomBytes(20).toString('hex');
-  newUser.pwd = crypto.createHash('sha256').update(newUser.pwd).digest('hex');
-  newUser.level = newUser.level || 'user';
-  newUser.status = newUser.status || 'on';
-  
-  users.push(newUser);
-  writeUsers(users);
-  
-  const { pwd, ...userWithoutPwd } = newUser;
-  res.status(201).json(userWithoutPwd);
+    newUser.id = crypto.randomBytes(20).toString('hex');
+    newUser.pwd = crypto.createHash('sha256').update(newUser.pwd).digest('hex');
+    newUser.level = newUser.level || 'user';
+    newUser.status = newUser.status || 'on';
+    
+    users.push(newUser);
+    
+    if (writeUsers(users)) {
+      const { pwd, ...userWithoutPwd } = newUser;
+      res.status(201).json(userWithoutPwd);
+    } else {
+      res.status(500).json({ error: 'Erro ao salvar usuário' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 /**
@@ -177,7 +192,7 @@ router.post('/', (req, res) => {
  * /users/{id}:
  *   put:
  *     summary: Atualiza um usuário existente
- *     tags: 
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
@@ -217,33 +232,38 @@ router.post('/', (req, res) => {
  *         description: Email ou usuário já existe.
  */
 router.put('/:id', (req, res) => {
-  const users = readUsers();
-  const index = users.findIndex(u => u.id === req.params.id);
+  try {
+    const users = readUsers();
+    const index = users.findIndex(u => u.id === req.params.id);
 
-  if (index === -1) {
-    return res.status(404).json({ error: 'Usuário não encontrado.' });
+    if (index === -1) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    const updateData = req.body;
+
+    if (updateData.contact_email && users.some(u => u.id !== req.params.id && u.contact_email === updateData.contact_email)) {
+      return res.status(409).json({ error: 'Email já está em uso.' });
+    }
+    if (updateData.user && users.some(u => u.id !== req.params.id && u.user === updateData.user)) {
+      return res.status(409).json({ error: 'Nome de usuário já está em uso.' });
+    }
+
+    if (updateData.pwd) {
+      updateData.pwd = crypto.createHash('sha256').update(updateData.pwd).digest('hex');
+    }
+
+    users[index] = { ...users[index], ...updateData };
+    
+    if (writeUsers(users)) {
+      const { pwd, ...userWithoutPwd } = users[index];
+      res.status(200).json(userWithoutPwd);
+    } else {
+      res.status(500).json({ error: 'Erro ao salvar alterações' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
-
-  const updateData = req.body;
-
-  
-  if (updateData.contact_email && users.some(u => u.id !== req.params.id && u.contact_email === updateData.contact_email)) {
-    return res.status(409).json({ error: 'Email já está em uso.' });
-  }
-  if (updateData.user && users.some(u => u.id !== req.params.id && u.user === updateData.user)) {
-    return res.status(409).json({ error: 'Nome de usuário já está em uso.' });
-  }
-
-  
-  if (updateData.pwd) {
-    updateData.pwd = crypto.createHash('sha256').update(updateData.pwd).digest('hex');
-  }
-
-  users[index] = { ...users[index], ...updateData };
-  writeUsers(users);
-  
-  const { pwd, ...userWithoutPwd } = users[index];
-  res.status(200).json(userWithoutPwd);
 });
 
 /**
@@ -251,7 +271,7 @@ router.put('/:id', (req, res) => {
  * /users/{id}:
  *   delete:
  *     summary: Deleta um usuário
- *     tags: 
+ *     tags: [Users]
  *     parameters:
  *       - in: path
  *         name: id
@@ -266,15 +286,22 @@ router.put('/:id', (req, res) => {
  *         description: Usuário não encontrado.
  */
 router.delete('/:id', (req, res) => {
-  let users = readUsers();
-  const initialLength = users.length;
-  users = users.filter(u => u.id !== req.params.id);
+  try {
+    let users = readUsers();
+    const initialLength = users.length;
+    users = users.filter(u => u.id !== req.params.id);
 
-  if (users.length !== initialLength) {
-    writeUsers(users);
-    res.status(200).json({ message: 'Usuário deletado com sucesso.' });
-  } else {
-    res.status(404).json({ error: 'Usuário não encontrado.' });
+    if (users.length !== initialLength) {
+      if (writeUsers(users)) {
+        res.status(200).json({ message: 'Usuário deletado com sucesso.' });
+      } else {
+        res.status(500).json({ error: 'Erro ao salvar alterações' });
+      }
+    } else {
+      res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
