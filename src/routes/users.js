@@ -41,7 +41,7 @@ const writeUsers = (data) => {
  * /users:
  *   get:
  *     summary: Lista todos os usuários
- *     tags: [Users - Maria Paula]
+ *     tags:
  *     responses:
  *       200:
  *         description: Lista de usuários retornada com sucesso.
@@ -77,7 +77,7 @@ router.get('/', (req, res) => {
  * /users/{id}:
  *   get:
  *     summary: Busca um usuário pelo ID
- *     tags: [Users - Maria Paula]
+ *     tags: 
  *     parameters:
  *       - in: path
  *         name: id
@@ -107,7 +107,7 @@ router.get('/:id', (req, res) => {
  * /users:
  *   post:
  *     summary: Cria um novo usuário
- *     tags: [Users - Maria Paula]
+ *     tags:
  *     requestBody:
  *       required: true
  *       content:
@@ -177,7 +177,7 @@ router.post('/', (req, res) => {
  * /users/{id}:
  *   put:
  *     summary: Atualiza um usuário existente
- *     tags: [Users - Maria Paula]
+ *     tags: 
  *     parameters:
  *       - in: path
  *         name: id
@@ -251,7 +251,7 @@ router.put('/:id', (req, res) => {
  * /users/{id}:
  *   delete:
  *     summary: Deleta um usuário
- *     tags: [Users - Maria Paula]
+ *     tags: 
  *     parameters:
  *       - in: path
  *         name: id
