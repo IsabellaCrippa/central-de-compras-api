@@ -32,7 +32,7 @@ const writeUsers = (data) => {
 /**
  * @swagger
  * tags:
- *   name: Users
+ *   name: Users - Maria Paula
  *   description: Gerenciamento de usuários
  */
 
@@ -41,7 +41,7 @@ const writeUsers = (data) => {
  * /users:
  *   get:
  *     summary: Lista todos os usuários
- *     tags: [Users]
+ *     tags: [Users - Maria Paula]
  *     responses:
  *       200:
  *         description: Lista de usuários retornada com sucesso.
@@ -56,16 +56,20 @@ const writeUsers = (data) => {
  *                     type: string
  *                   name:
  *                     type: string
- *                   email:
+ *                   contact_email:
  *                     type: string
- *                   role:
+ *                   user:
+ *                     type: string
+ *                   level:
  *                     type: string
  *                   status:
  *                     type: string
  */
 router.get('/', (req, res) => {
   const users = readUsers();
-  res.status(200).json(users);
+  // Remove senhas dos resultados
+  const usersWithoutPwd = users.map(({ pwd, ...user }) => user);
+  res.status(200).json(usersWithoutPwd);
 });
 
 /**
@@ -73,7 +77,7 @@ router.get('/', (req, res) => {
  * /users/{id}:
  *   get:
  *     summary: Busca um usuário pelo ID
- *     tags: [Users]
+ *     tags: [Users - Maria Paula]
  *     parameters:
  *       - in: path
  *         name: id
@@ -91,7 +95,8 @@ router.get('/:id', (req, res) => {
   const users = readUsers();
   const user = users.find(u => u.id === req.params.id);
   if (user) {
-    res.status(200).json(user);
+    const { pwd, ...userWithoutPwd } = user;
+    res.status(200).json(userWithoutPwd);
   } else {
     res.status(404).json({ error: 'Usuário não encontrado.' });
   }
@@ -102,46 +107,69 @@ router.get('/:id', (req, res) => {
  * /users:
  *   post:
  *     summary: Cria um novo usuário
- *     tags: [Users]
+ *     tags: [Users - Maria Paula]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - name
+ *               - contact_email
+ *               - user
+ *               - pwd
  *             properties:
  *               name:
  *                 type: string
- *               email:
+ *               contact_email:
+ *                 type: string
+ *               user:
  *                 type: string
  *               pwd:
  *                 type: string
- *               role:
+ *               level:
  *                 type: string
+ *                 enum: [admin, user]
+ *                 default: user
  *               status:
  *                 type: string
+ *                 enum: [on, off]
+ *                 default: on
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso.
  *       400:
  *         description: Dados inválidos.
+ *       409:
+ *         description: Email ou usuário já existe.
  */
 router.post('/', (req, res) => {
   const users = readUsers();
   const newUser = req.body;
 
-  if (!newUser.name || !newUser.email || !newUser.pwd) {
-    return res.status(400).json({ error: 'Campos obrigatórios: name, email, pwd' });
+  if (!newUser.name || !newUser.contact_email || !newUser.user || !newUser.pwd) {
+    return res.status(400).json({ error: 'Campos obrigatórios: name, contact_email, user, pwd' });
+  }
+
+  // Verifica se email ou usuário já existem
+  if (users.some(u => u.contact_email === newUser.contact_email)) {
+    return res.status(409).json({ error: 'Email já cadastrado.' });
+  }
+  if (users.some(u => u.user === newUser.user)) {
+    return res.status(409).json({ error: 'Nome de usuário já existe.' });
   }
 
   newUser.id = crypto.randomBytes(20).toString('hex');
-  // Usar SHA256 em vez de SHA1
   newUser.pwd = crypto.createHash('sha256').update(newUser.pwd).digest('hex');
+  newUser.level = newUser.level || 'user';
+  newUser.status = newUser.status || 'on';
   
   users.push(newUser);
   writeUsers(users);
   
-  res.status(201).json(newUser);
+  const { pwd, ...userWithoutPwd } = newUser;
+  res.status(201).json(userWithoutPwd);
 });
 
 /**
@@ -149,7 +177,7 @@ router.post('/', (req, res) => {
  * /users/{id}:
  *   put:
  *     summary: Atualiza um usuário existente
- *     tags: [Users]
+ *     tags: [Users - Maria Paula]
  *     parameters:
  *       - in: path
  *         name: id
@@ -166,29 +194,56 @@ router.post('/', (req, res) => {
  *             properties:
  *               name:
  *                 type: string
- *               email:
+ *               contact_email:
  *                 type: string
- *               role:
+ *               user:
  *                 type: string
+ *               pwd:
+ *                 type: string
+ *               level:
+ *                 type: string
+ *                 enum: [admin, user]
  *               status:
  *                 type: string
+ *                 enum: [on, off]
  *     responses:
  *       200:
  *         description: Usuário atualizado com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  *       404:
  *         description: Usuário não encontrado.
+ *       409:
+ *         description: Email ou usuário já existe.
  */
 router.put('/:id', (req, res) => {
   const users = readUsers();
   const index = users.findIndex(u => u.id === req.params.id);
 
-  if (index !== -1) {
-    users[index] = { ...users[index], ...req.body, id: req.params.id };
-    writeUsers(users);
-    res.status(200).json(users[index]);
-  } else {
-    res.status(404).json({ error: 'Usuário não encontrado.' });
+  if (index === -1) {
+    return res.status(404).json({ error: 'Usuário não encontrado.' });
   }
+
+  const updateData = req.body;
+
+  // Verifica duplicatas em outros usuários
+  if (updateData.contact_email && users.some(u => u.id !== req.params.id && u.contact_email === updateData.contact_email)) {
+    return res.status(409).json({ error: 'Email já está em uso.' });
+  }
+  if (updateData.user && users.some(u => u.id !== req.params.id && u.user === updateData.user)) {
+    return res.status(409).json({ error: 'Nome de usuário já está em uso.' });
+  }
+
+  // Atualiza senha com hash se for fornecida
+  if (updateData.pwd) {
+    updateData.pwd = crypto.createHash('sha256').update(updateData.pwd).digest('hex');
+  }
+
+  users[index] = { ...users[index], ...updateData };
+  writeUsers(users);
+  
+  const { pwd, ...userWithoutPwd } = users[index];
+  res.status(200).json(userWithoutPwd);
 });
 
 /**
@@ -196,7 +251,7 @@ router.put('/:id', (req, res) => {
  * /users/{id}:
  *   delete:
  *     summary: Deleta um usuário
- *     tags: [Users]
+ *     tags: [Users - Maria Paula]
  *     parameters:
  *       - in: path
  *         name: id
@@ -212,10 +267,11 @@ router.put('/:id', (req, res) => {
  */
 router.delete('/:id', (req, res) => {
   let users = readUsers();
-  const filteredUsers = users.filter(u => u.id !== req.params.id);
+  const initialLength = users.length;
+  users = users.filter(u => u.id !== req.params.id);
 
-  if (users.length !== filteredUsers.length) {
-    writeUsers(filteredUsers);
+  if (users.length !== initialLength) {
+    writeUsers(users);
     res.status(200).json({ message: 'Usuário deletado com sucesso.' });
   } else {
     res.status(404).json({ error: 'Usuário não encontrado.' });

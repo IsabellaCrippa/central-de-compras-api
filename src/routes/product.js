@@ -1,12 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+const express = require('express'); // cria o servidor e organiza as rotas
+const router = express.Router(); // cria um grupo de rotas que depois é exportado para o servidor principal
+const fs = require('fs'); // módulo nativo do Node para ler e escrever arquivos
+const path = require('path'); // ajuda a montar o caminho correto até o arquivo JSON
+const crypto = require('crypto'); //gera IDs únicos para cada pedido novo
 
 const dataPath = path.join(__dirname, '..', 'data', 'product.json');
 
-const readProducts = () => {
+const readProducts = () => { // função para ler os produtos do arquivo JSON -
   try {
     if (!fs.existsSync(dataPath)) {
       const initialData = [];
@@ -21,7 +21,7 @@ const readProducts = () => {
   }
 };
 
-const writeProducts = (data) => {
+const writeProducts = (data) => { // função para escrever os produtos no arquivo JSON
   try {
     fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
   } catch (error) {
@@ -32,7 +32,7 @@ const writeProducts = (data) => {
 /**
  * @swagger
  * tags:
- *   name: Products
+ *   name: Products                                  
  *   description: Gerenciamento de produtos
  */
 

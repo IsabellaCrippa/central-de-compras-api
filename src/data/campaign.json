@@ -6,5 +6,13 @@
     "start_date": "2023-08-15 16:00:00",
     "end_date": "2023-08-15 16:00:00",
     "discount_percentage": "20"
+  },
+  {
+    "id": "49de6586007e76642bfbe3e71de9a759d7897606",
+    "supplier_id": "string",
+    "name": "string",
+    "start_date": "string",
+    "end_date": "string",
+    "discount_percentage": "string"
   }
 ]

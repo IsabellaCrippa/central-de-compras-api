@@ -4,6 +4,7 @@ const cors = require('cors');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
+//define endpoints específicos da sua API
 const userRoutes = require('./src/routes/users');
 const campaignRoutes = require('./src/routes/campaign');
 const supplierRoutes = require('./src/routes/supplier');
@@ -14,12 +15,13 @@ const orderRoutes = require('./src/routes/order');
 const app = express();
 const port = 3000;
 
-app.use(express.json());
-app.use(cors());
+app.use(express.json()); // permite que a API leia requisições com corpo em JSON
+app.use(cors()); 
 
+//swagger
 const options = {
   definition: {
-    openapi: '3.0.0',
+    openapi: '3.0.0', 
     info: {
       title: 'Central de Compras API',
       version: '1.0.0',
@@ -31,12 +33,15 @@ const options = {
       },
     ],
   },
-  apis: ['./src/routes/*.js'],
+  apis: ['./src/routes/*.js'], //indica onde o Swagger vai buscar comentários para gerar a documentação automaticamente.
 };
 
 const swaggerSpec = swaggerJsDoc(options);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+//torna a documentação acessível em http://localhost:3000/api-docs
 
+
+//Cada rota recebe um prefixo e aponta para o arquivo de rotas correspondente.
 if (userRoutes) app.use('/users', userRoutes);
 if (campaignRoutes) app.use('/campaigns', campaignRoutes);
 if (supplierRoutes) app.use('/suppliers', supplierRoutes);
@@ -45,7 +50,7 @@ if (productRoutes) app.use('/products', productRoutes);
 if (orderRoutes) app.use('/orders', orderRoutes);
 
 app.get('/', (req, res) => {
-  res.send('API da Central de Compras rodando com sucesso!');
+  res.send('API da Central de Compras rodando');
 });
 
 app.listen(port, () => {
