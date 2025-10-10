@@ -24,16 +24,27 @@ const readOrders = () => {
 const writeOrders = (data) => {
   try {
     fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    return true;
   } catch (error) {
     console.error('Erro ao escrever arquivo:', error);
+    return false;
   }
+};
+
+const isValidStatus = (status) => {
+  return ['Pending', 'Shipped', 'Delivered'].includes(status);
+};
+
+const isValidDate = (dateString) => {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date);
 };
 
 /**
  * @swagger
  * tags:
  *   name: Orders
- *   description: Gerenciamento de pedidos
+ *   description: Gerenciamento de pedidos - Isabele
  */
 
 /**
@@ -54,23 +65,37 @@ const writeOrders = (data) => {
  *                 properties:
  *                   id:
  *                     type: string
- *                   customer:
+ *                   store_id:
  *                     type: string
- *                   items:
+ *                   item:
  *                     type: array
  *                     items:
  *                       type: object
  *                       properties:
- *                         productId:
+ *                         product_id:
  *                           type: string
  *                         quantity:
  *                           type: number
- *                   total:
- *                     type: number
+ *                         campaign_id:
+ *                           type: string
+ *                         unit_price:
+ *                           type: string
+ *                   total_amount:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                     enum: [Pending, Shipped, Delivered]
+ *                   date:
+ *                     type: string
+ *                     format: date-time
  */
 router.get('/', (req, res) => {
-  const orders = readOrders();
-  res.status(200).json(orders);
+  try {
+    const orders = readOrders();
+    res.status(200).json(orders);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 /**
@@ -93,12 +118,16 @@ router.get('/', (req, res) => {
  *         description: Pedido não encontrado.
  */
 router.get('/:id', (req, res) => {
-  const orders = readOrders();
-  const order = orders.find(o => o.id === req.params.id);
-  if (order) {
-    res.status(200).json(order);
-  } else {
-    res.status(404).json({ error: 'Pedido não encontrado.' });
+  try {
+    const orders = readOrders();
+    const order = orders.find(o => o.id === req.params.id);
+    if (order) {
+      res.status(200).json(order);
+    } else {
+      res.status(404).json({ error: 'Pedido não encontrado.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -114,20 +143,40 @@ router.get('/:id', (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - store_id
+ *               - item
+ *               - total_amount
  *             properties:
- *               customer:
+ *               store_id:
  *                 type: string
- *               items:
+ *               item:
  *                 type: array
  *                 items:
  *                   type: object
+ *                   required:
+ *                     - product_id
+ *                     - quantity
+ *                     - unit_price
  *                   properties:
- *                     productId:
+ *                     product_id:
  *                       type: string
  *                     quantity:
  *                       type: number
- *               total:
- *                 type: number
+ *                     campaign_id:
+ *                       type: string
+ *                     unit_price:
+ *                       type: string
+ *               total_amount:
+ *                 type: string
+ *                 example: "123.00"
+ *               status:
+ *                 type: string
+ *                 enum: [Pending, Shipped, Delivered]
+ *                 default: Pending
+ *               date:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       201:
  *         description: Pedido criado com sucesso.
@@ -135,17 +184,56 @@ router.get('/:id', (req, res) => {
  *         description: Dados inválidos.
  */
 router.post('/', (req, res) => {
-  const orders = readOrders();
-  const newOrder = req.body;
+  try {
+    const { store_id, item, total_amount, status, date } = req.body;
 
-  if (!newOrder.customer || !newOrder.items || !newOrder.total) {
-    return res.status(400).json({ error: 'Campos obrigatórios: customer, items, total' });
+    if (!store_id || !item || !total_amount) {
+      return res.status(400).json({ error: 'Campos obrigatórios: store_id, item, total_amount' });
+    }
+
+    if (!Array.isArray(item) || item.length === 0) {
+      return res.status(400).json({ error: 'O campo item deve ser um array não vazio' });
+    }
+
+    for (const orderItem of item) {
+      if (!orderItem.product_id || !orderItem.quantity || !orderItem.unit_price) {
+        return res.status(400).json({ error: 'Cada item deve ter product_id, quantity e unit_price' });
+      }
+      if (orderItem.quantity <= 0) {
+        return res.status(400).json({ error: 'A quantidade deve ser maior que zero' });
+      }
+    }
+
+    const orderStatus = status || 'Pending';
+    if (!isValidStatus(orderStatus)) {
+      return res.status(400).json({ error: 'Status inválido. Valores permitidos: Pending, Shipped, Delivered' });
+    }
+
+    const orderDate = date || new Date().toISOString().replace('T', ' ').substring(0, 19);
+    if (!isValidDate(orderDate)) {
+      return res.status(400).json({ error: 'Formato de data inválido' });
+    }
+
+    const orders = readOrders();
+    const newOrder = {
+      id: crypto.randomBytes(20).toString('hex'),
+      store_id,
+      item,
+      total_amount,
+      status: orderStatus,
+      date: orderDate
+    };
+
+    orders.push(newOrder);
+    
+    if (writeOrders(orders)) {
+      res.status(201).json(newOrder);
+    } else {
+      res.status(500).json({ error: 'Erro ao salvar pedido' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
-
-  newOrder.id = crypto.randomBytes(20).toString('hex');
-  orders.push(newOrder);
-  writeOrders(orders);
-  res.status(201).json(newOrder);
 });
 
 /**
@@ -168,35 +256,80 @@ router.post('/', (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               customer:
+ *               store_id:
  *                 type: string
- *               items:
+ *               item:
  *                 type: array
  *                 items:
  *                   type: object
  *                   properties:
- *                     productId:
+ *                     product_id:
  *                       type: string
  *                     quantity:
  *                       type: number
- *               total:
- *                 type: number
+ *                     campaign_id:
+ *                       type: string
+ *                     unit_price:
+ *                       type: string
+ *               total_amount:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [Pending, Shipped, Delivered]
+ *               date:
+ *                 type: string
+ *                 format: date-time
  *     responses:
  *       200:
  *         description: Pedido atualizado com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  *       404:
  *         description: Pedido não encontrado.
  */
 router.put('/:id', (req, res) => {
-  const orders = readOrders();
-  const index = orders.findIndex(o => o.id === req.params.id);
+  try {
+    const orders = readOrders();
+    const index = orders.findIndex(o => o.id === req.params.id);
 
-  if (index !== -1) {
-    orders[index] = { ...orders[index], ...req.body, id: req.params.id };
-    writeOrders(orders);
-    res.status(200).json(orders[index]);
-  } else {
-    res.status(404).json({ error: 'Pedido não encontrado.' });
+    if (index === -1) {
+      return res.status(404).json({ error: 'Pedido não encontrado.' });
+    }
+
+    const updateData = req.body;
+
+    if (updateData.status && !isValidStatus(updateData.status)) {
+      return res.status(400).json({ error: 'Status inválido. Valores permitidos: Pending, Shipped, Delivered' });
+    }
+
+    if (updateData.date && !isValidDate(updateData.date)) {
+      return res.status(400).json({ error: 'Formato de data inválido' });
+    }
+
+    if (updateData.item) {
+      if (!Array.isArray(updateData.item) || updateData.item.length === 0) {
+        return res.status(400).json({ error: 'O campo item deve ser um array não vazio' });
+      }
+
+      for (const orderItem of updateData.item) {
+        if (!orderItem.product_id || !orderItem.quantity || !orderItem.unit_price) {
+          return res.status(400).json({ error: 'Cada item deve ter product_id, quantity e unit_price' });
+        }
+        if (orderItem.quantity <= 0) {
+          return res.status(400).json({ error: 'A quantidade deve ser maior que zero' });
+        }
+      }
+    }
+
+    orders[index] = { ...orders[index], ...updateData, id: req.params.id };
+    
+    if (writeOrders(orders)) {
+      res.status(200).json(orders[index]);
+    } else {
+      res.status(500).json({ error: 'Erro ao salvar alterações' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -220,14 +353,22 @@ router.put('/:id', (req, res) => {
  *         description: Pedido não encontrado.
  */
 router.delete('/:id', (req, res) => {
-  let orders = readOrders();
-  const filteredOrders = orders.filter(o => o.id !== req.params.id);
+  try {
+    let orders = readOrders();
+    const initialLength = orders.length;
+    orders = orders.filter(o => o.id !== req.params.id);
 
-  if (orders.length !== filteredOrders.length) {
-    writeOrders(filteredOrders);
-    res.status(200).json({ message: 'Pedido deletado com sucesso.' });
-  } else {
-    res.status(404).json({ error: 'Pedido não encontrado.' });
+    if (orders.length !== initialLength) {
+      if (writeOrders(orders)) {
+        res.status(200).json({ message: 'Pedido deletado com sucesso.' });
+      } else {
+        res.status(500).json({ error: 'Erro ao salvar alterações' });
+      }
+    } else {
+      res.status(404).json({ error: 'Pedido não encontrado.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 

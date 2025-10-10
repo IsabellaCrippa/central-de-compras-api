@@ -32,8 +32,8 @@ const writeUsers = (data) => {
 /**
  * @swagger
  * tags:
- *   name: Users - Maria Paula
- *   description: Gerenciamento de usuários
+ *   name: Users
+ *   description: Gerenciamento de usuários - Maria Paula
  */
 
 /**
@@ -226,7 +226,7 @@ router.put('/:id', (req, res) => {
 
   const updateData = req.body;
 
-  // Verifica duplicatas em outros usuários
+  
   if (updateData.contact_email && users.some(u => u.id !== req.params.id && u.contact_email === updateData.contact_email)) {
     return res.status(409).json({ error: 'Email já está em uso.' });
   }
@@ -234,7 +234,7 @@ router.put('/:id', (req, res) => {
     return res.status(409).json({ error: 'Nome de usuário já está em uso.' });
   }
 
-  // Atualiza senha com hash se for fornecida
+  
   if (updateData.pwd) {
     updateData.pwd = crypto.createHash('sha256').update(updateData.pwd).digest('hex');
   }

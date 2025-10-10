@@ -31,11 +31,23 @@ const writeCampaigns = (data) => {
   }
 };
 
+// 
+const isValidDate = (dateString) => {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date);
+};
+
+// 
+const isValidDiscount = (discount) => {
+  const discountNum = parseFloat(discount);
+  return !isNaN(discountNum) && discountNum >= 0 && discountNum <= 100;
+};
+
 /**
  * @swagger
  * tags:
  *   name: Campaigns
- *   description: Gerenciamento de campanhas
+ *   description: Gerenciamento de campanhas - Maria Paula
  */
 
 /**
@@ -62,8 +74,10 @@ const writeCampaigns = (data) => {
  *                     type: string
  *                   start_date:
  *                     type: string
+ *                     format: date-time
  *                   end_date:
  *                     type: string
+ *                     format: date-time
  *                   discount_percentage:
  *                     type: string
  */
@@ -121,6 +135,12 @@ router.get('/:id', (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - supplier_id
+ *               - name
+ *               - start_date
+ *               - end_date
+ *               - discount_percentage
  *             properties:
  *               supplier_id:
  *                 type: string
@@ -128,10 +148,15 @@ router.get('/:id', (req, res) => {
  *                 type: string
  *               start_date:
  *                 type: string
+ *                 format: date-time
+ *                 example: "2023-08-15 16:00:00"
  *               end_date:
  *                 type: string
+ *                 format: date-time
+ *                 example: "2023-08-15 16:00:00"
  *               discount_percentage:
  *                 type: string
+ *                 example: "20"
  *     responses:
  *       201:
  *         description: Campanha criada com sucesso.
@@ -142,11 +167,35 @@ router.post('/', (req, res) => {
   try {
     const { supplier_id, name, start_date, end_date, discount_percentage } = req.body;
     
+    
     if (!supplier_id || !name || !start_date || !end_date || !discount_percentage) {
       return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
     }
 
+    
+    if (!isValidDate(start_date) || !isValidDate(end_date)) {
+      return res.status(400).json({ error: 'Formato de data inválido' });
+    }
+
+    
+    if (new Date(start_date) >= new Date(end_date)) {
+      return res.status(400).json({ error: 'Data de início deve ser anterior à data de fim' });
+    }
+
+    if (!isValidDiscount(discount_percentage)) {
+      return res.status(400).json({ error: 'Porcentagem de desconto deve ser um valor entre 0 e 100' });
+    }
+
     const campaigns = readCampaigns();
+    
+    const existingCampaign = campaigns.find(c => 
+      c.supplier_id === supplier_id && c.name.toLowerCase() === name.toLowerCase()
+    );
+    
+    if (existingCampaign) {
+      return res.status(409).json({ error: 'Já existe uma campanha com este nome para este fornecedor' });
+    }
+
     const newCampaign = {
       id: crypto.randomBytes(20).toString('hex'),
       supplier_id,
@@ -194,31 +243,68 @@ router.post('/', (req, res) => {
  *                 type: string
  *               start_date:
  *                 type: string
+ *                 format: date-time
  *               end_date:
  *                 type: string
+ *                 format: date-time
  *               discount_percentage:
  *                 type: string
  *     responses:
  *       200:
  *         description: Campanha atualizada com sucesso.
+ *       400:
+ *         description: Dados inválidos.
  *       404:
  *         description: Campanha não encontrada.
+ *       409:
+ *         description: Já existe uma campanha com este nome.
  */
 router.put('/:id', (req, res) => {
   try {
     const campaigns = readCampaigns();
     const index = campaigns.findIndex(c => c.id === req.params.id);
 
-    if (index !== -1) {
-      campaigns[index] = { ...campaigns[index], ...req.body, id: req.params.id };
+    if (index === -1) {
+      return res.status(404).json({ error: 'Campanha não encontrada.' });
+    }
+
+    const updateData = req.body;
+
+    if (updateData.start_date && !isValidDate(updateData.start_date)) {
+      return res.status(400).json({ error: 'Formato de data de início inválido' });
+    }
+    if (updateData.end_date && !isValidDate(updateData.end_date)) {
+      return res.status(400).json({ error: 'Formato de data de fim inválido' });
+    }
+
+    const startDate = updateData.start_date || campaigns[index].start_date;
+    const endDate = updateData.end_date || campaigns[index].end_date;
+    if (new Date(startDate) >= new Date(endDate)) {
+      return res.status(400).json({ error: 'Data de início deve ser anterior à data de fim' });
+    }
+
+    if (updateData.discount_percentage && !isValidDiscount(updateData.discount_percentage)) {
+      return res.status(400).json({ error: 'Porcentagem de desconto deve ser um valor entre 0 e 100' });
+    }
+
+    if (updateData.name) {
+      const existingCampaign = campaigns.find(c => 
+        c.id !== req.params.id && 
+        c.supplier_id === (updateData.supplier_id || campaigns[index].supplier_id) && 
+        c.name.toLowerCase() === updateData.name.toLowerCase()
+      );
       
-      if (writeCampaigns(campaigns)) {
-        res.status(200).json(campaigns[index]);
-      } else {
-        res.status(500).json({ error: 'Erro ao salvar alterações' });
+      if (existingCampaign) {
+        return res.status(409).json({ error: 'Já existe uma campanha com este nome para este fornecedor' });
       }
+    }
+
+    campaigns[index] = { ...campaigns[index], ...updateData, id: req.params.id };
+    
+    if (writeCampaigns(campaigns)) {
+      res.status(200).json(campaigns[index]);
     } else {
-      res.status(404).json({ error: 'Campanha não encontrada.' });
+      res.status(500).json({ error: 'Erro ao salvar alterações' });
     }
   } catch (error) {
     res.status(500).json({ error: 'Erro interno do servidor' });
