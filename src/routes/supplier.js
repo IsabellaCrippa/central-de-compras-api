@@ -6,7 +6,7 @@ const fs = require('fs');
 const suppliersPath = path.join(__dirname, '../data/supplier.json');
 
 /**
- * @swagger
+ * @swacleger
  * components:
  *   schemas:
  *     Supplier:

@@ -1,19 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs'); // Módulo para ler e escrever arquivos
-const path = require('path'); // Módulo para lidar com caminhos de arquivos
-const crypto = require('crypto'); // Módulo para gerar IDs únicos
+const fs = require('fs'); 
+const path = require('path');
+const crypto = require('crypto');
 
-// Caminho para o nosso "banco de dados" JSON
 const dataPath = path.join(__dirname, '..', '..', 'src/data/users.json');
 
-// Função auxiliar para ler os dados do JSON
 const readUsers = () => {
   const data = fs.readFileSync(dataPath, 'utf8');
   return JSON.parse(data);
 };
 
-// Função auxiliar para escrever os dados no JSON
 const writeUsers = (data) => {
   fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
 };
@@ -23,7 +20,7 @@ const writeUsers = (data) => {
  * @swagger
  * tags:
  *   name: Usuários
- *   description: Gerenciamento de usuários da API
+ *   description: Gerenciamento de usuários da API - Maria Paula
  */
 
 /**
@@ -96,7 +93,6 @@ router.post('/', (req, res) => {
   const users = readUsers();
   const newUser = req.body;
 
-  // Gera um ID único e uma senha "hash" simples (para o exemplo)
   newUser.id = crypto.randomBytes(20).toString('hex');
   newUser.pwd = crypto.createHash('sha1').update(newUser.pwd).digest('hex');
   
@@ -136,7 +132,6 @@ router.put('/:id', (req, res) => {
     const index = users.findIndex(u => u.id === req.params.id);
 
     if (index !== -1) {
-        // Atualiza o usuário mantendo o ID original
         users[index] = { ...users[index], ...req.body, id: req.params.id };
         writeUsers(users);
         res.status(200).json(users[index]);
