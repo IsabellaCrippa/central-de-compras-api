@@ -3,8 +3,8 @@ import mongoose from "mongoose";
 const productSchema = new mongoose.Schema({
     name: {type: String, required: ["O nome do produto é obrigatório."]},
     description: {type: String, required: ["A descrição do produto é obrigatória."]},
-    price: {type: Float32Array, required: ["O preço do produto é obrigatório."]},
-    stock_quantity: {type: Int16Array, required: ["A quantia do produto no estoque é obrigatória."]},
+    price: {type: Number, required: ["O preço do produto é obrigatório."]},
+    stock_quantity: {type: Number, required: ["A quantia do produto no estoque é obrigatória."]},
     supplier_id: {type: String, required: ["O ID do fornecedor do produto é obrigatório."]},
     status: {type: String, required: ["O status do produto é obrigatório."]},
 });

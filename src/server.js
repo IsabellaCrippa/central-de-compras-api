@@ -3,6 +3,10 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import userRoutes from './routes/userRoutes.js';
 import campaignRoutes from './routes/campaignRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import storeRoutes from './routes/storeRoutes.js';
+import supplierRoutes from './routes/supplierRoutes.js';
 import cors from 'cors';
 
 const router = Router();
@@ -17,6 +21,10 @@ mongoose.connect('mongodb://localhost:27017/central')
 app.use('/', router);
 app.use('/api/users', userRoutes);
 app.use('/api/campaign', campaignRoutes);
+app.use('/api/product', productRoutes);
+app.use('/api/order', orderRoutes);
+app.use('/api/store', storeRoutes);
+app.use('/api/supplier', supplierRoutes)
 
 app.listen(3000, () => {console.log('Servidor rodando na porta 3000')});
 
