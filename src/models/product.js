@@ -5,7 +5,7 @@ const productSchema = new mongoose.Schema({
     description: {type: String, required: ["A descrição do produto é obrigatória."]},
     price: {type: Number, required: ["O preço do produto é obrigatório."]},
     stock_quantity: {type: Number, required: ["A quantia do produto no estoque é obrigatória."]},
-    supplier_id: {type: String, required: ["O ID do fornecedor do produto é obrigatório."]},
+    supplier_id: {type: String, required: ["O ID do fornecedor do produto é obrigatório."], ref: "Supplier"},
     status: {type: String, required: ["O status do produto é obrigatório."]},
 });
 

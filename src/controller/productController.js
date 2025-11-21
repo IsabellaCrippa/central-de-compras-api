@@ -16,7 +16,15 @@ const listarProdutoPorId = async (req, res) => {
 }
 
 const listarProdutosPorFornecedor = async (req, res) => {
-    const listaPorFornecedor = await Product.findOne();
+    try {
+        const { supplierId } = req.params;
+
+        const produtos = await Product.find({ supplier_id: supplierId});
+        res.json(produtos);
+    }
+    catch (error) {
+        res.status(500).json({error: "Erro ao listar produtos por fornecedor"});
+    }
 }
 
 const atualizarProduto = async (req, res) => {
@@ -33,6 +41,7 @@ export {
     criarProduto,
     listarProdutos,
     listarProdutoPorId,
+    listarProdutosPorFornecedor,
     atualizarProduto,
     deletarProduto
 }

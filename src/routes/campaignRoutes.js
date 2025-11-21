@@ -2,16 +2,18 @@ import { Router } from 'express';
 import {
     criarCampanha,
     listarCampanhas,
-    obterCampanhaPorId,
+    listarCampanhaPorId,
+    listarCampanhaPorFornecedor,
     atualizarCampanha,
     deletarCampanha
-} from '../controller/CampaignController.js';
+} from '../controller/campaignController.js';
 
 const router = Router();
 
 router.post('/', criarCampanha);
 router.get('/', listarCampanhas);
-router.get('/:id', obterCampanhaPorId);
+router.get('/:id', listarCampanhaPorId);
+router.get('/supplier/:supplierId', listarCampanhaPorFornecedor);
 router.put('/:id', atualizarCampanha);
 router.delete('/:id', deletarCampanha);
 

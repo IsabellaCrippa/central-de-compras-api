@@ -10,9 +10,22 @@ const listarCampanhas = async (req, res) => {
     res.json(campanhas);
 }
 
-const obterCampanhaPorId = async (req, res) => {
+const listarCampanhaPorId = async (req, res) => {
     const campanha = await Campaign.findById(req.params.id);
     res.json(campanha);
+}
+
+const listarCampanhaPorFornecedor = async (req, res) => {
+    try {
+        const { supplierId } = req.params;
+
+        const campanhas = await Campaign.find({supplier_id: supplierId});
+
+        res.json(campanhas);
+    }
+    catch (error) {
+        res.status(500).json({error: "Erro ao buscar camapanhas por fornecedor"});
+    }
 }
 
 const atualizarCampanha = async (req, res) => {
@@ -28,7 +41,8 @@ const deletarCampanha = async (req, res) => {
 export {
     criarCampanha,
     listarCampanhas,
-    obterCampanhaPorId,
+    listarCampanhaPorId,
+    listarCampanhaPorFornecedor,
     atualizarCampanha,
     deletarCampanha
 };

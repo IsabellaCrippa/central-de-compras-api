@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
-    store_id: {type: String, required: ["ID da loja é obrigatório."]},
+    store_id: {type: String, required: ["ID da loja é obrigatório."], ref: "Store"},
     item: {type: String, required:["Nome do item é obrigatório."]},
     total_amount: {type: String, required: ["O custo total é obrigatório ser informado."]},
     status: {type: String, required: ["O status do pedido é obrigatório."]},
