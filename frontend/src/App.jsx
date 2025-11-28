@@ -1,31 +1,46 @@
-import { useState } from "react";
-import Sidebar from "./components/Sidebar";
+import { useState } from 'react'
+import Sidebar from './components/Sidebar'
+import Campaigns from './components/Campaigns'
+import Orders from './components/Orders'
+import Products from './components/Products'
+import Stores from './components/Stores'
+import Suppliers from './components/Suppliers'
+import Users from './components/Users'
+import './App.css'
 
-import Users from "./components/Users";
-import Suppliers from "./components/Suppliers";
-import Products from "./components/Products";
-import Orders from "./components/Orders";
-import Stores from "./components/Stores";
-import Campaigns from "./components/Campaigns";
+function App() {
+  const [activeComponent, setActiveComponent] = useState('campaigns')
 
-export default function App() {
-  const [current, setCurrent] = useState("users");
-
-  const screens = {
-    users: <Users />,
-    suppliers: <Suppliers />,
-    products: <Products />,
-    orders: <Orders />,
-    stores: <Stores />,
-    campaigns: <Campaigns />
-  };
+  const renderComponent = () => {
+    switch (activeComponent) {
+      case 'campaigns':
+        return <Campaigns />
+      case 'orders':
+        return <Orders />
+      case 'products':
+        return <Products />
+      case 'stores':
+        return <Stores />
+      case 'suppliers':
+        return <Suppliers />
+      case 'users':
+        return <Users />
+      default:
+        return <Campaigns />
+    }
+  }
 
   return (
-    <div style={{ display: "flex" }}>
-      <Sidebar current={current} setCurrent={setCurrent} />
-      <div style={{ padding: "20px", flex: 1 }}>
-        {screens[current]}
-      </div>
+    <div className="app">
+      <Sidebar 
+        activeComponent={activeComponent} 
+        setActiveComponent={setActiveComponent} 
+      />
+      <main className="main-content">
+        {renderComponent()}
+      </main>
     </div>
-  );
+  )
 }
+
+export default App
