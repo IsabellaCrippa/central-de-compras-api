@@ -5,14 +5,16 @@ const Orders = () => {
   const [orders, setOrders] = useState([])
   const [formData, setFormData] = useState({
     store_id: '',
-    item: '',
     total_amount: '',
-    status: 'Pending',
+    status: 'Pendente',
     date: new Date().toISOString().split('T')[0]
   })
+  const [items, setItems] = useState([
+    { product_id: '', quantity: 1, campaign_id: '', unit_price: '' }
+  ])
   const [editingId, setEditingId] = useState(null)
 
-  const statusOptions = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+  const statusOptions = ['Pendente', 'Processando', 'Enviado', 'Entregue', 'Cancelado']
 
   const fetchOrders = async () => {
     try {
@@ -28,12 +30,55 @@ const Orders = () => {
     fetchOrders()
   }, [])
 
+  // Adicionar novo item
+  const addItem = () => {
+    setItems([...items, { product_id: '', quantity: 1, campaign_id: '', unit_price: '' }])
+  }
+
+  // Remover item
+  const removeItem = (index) => {
+    if (items.length > 1) {
+      const newItems = items.filter((_, i) => i !== index)
+      setItems(newItems)
+    }
+  }
+
+  // Atualizar item
+  const updateItem = (index, field, value) => {
+    const newItems = items.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    )
+    setItems(newItems)
+  }
+
+  // Calcular total automaticamente
+  const calculateTotal = () => {
+    const total = items.reduce((sum, item) => {
+      const price = parseFloat(item.unit_price) || 0
+      const quantity = parseInt(item.quantity) || 0
+      return sum + (price * quantity)
+    }, 0)
+    
+    setFormData(prev => ({
+      ...prev,
+      total_amount: total.toFixed(2)
+    }))
+    
+    return total
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     
+    // Formatar itens para o backend
+    const itemsString = items.map(item => 
+      `(${item.product_id}, ${item.quantity}, ${item.campaign_id || 'null'}, ${item.unit_price})`
+    ).join(', ')
+    
     const orderData = {
       ...formData,
-      total_amount: parseFloat(formData.total_amount).toFixed(2)
+      item: `[${itemsString}]`,
+      total_amount: formData.total_amount || calculateTotal().toFixed(2)
     }
 
     try {
@@ -67,24 +112,30 @@ const Orders = () => {
   }
 
   const handleEdit = (order) => {
+    const parsedItems = parseOrderItems(order.item)
+    
     setFormData({
       store_id: order.store_id,
-      item: order.item,
       total_amount: order.total_amount,
       status: order.status,
       date: order.date.split('T')[0]
     })
+    
+    setItems(parsedItems.length > 0 ? parsedItems : [
+      { product_id: '', quantity: 1, campaign_id: '', unit_price: '' }
+    ])
+    
     setEditingId(order._id || order.id)
   }
 
   const resetForm = () => {
     setFormData({
       store_id: '',
-      item: '',
       total_amount: '',
-      status: 'Pending',
+      status: 'Pendente',
       date: new Date().toISOString().split('T')[0]
     })
+    setItems([{ product_id: '', quantity: 1, campaign_id: '', unit_price: '' }])
     setEditingId(null)
   }
 
@@ -101,30 +152,28 @@ const Orders = () => {
 
   const getStatusBadge = (status) => {
     const statusColors = {
-      'Pending': 'status-pending',
-      'Processing': 'status-processing',
-      'Shipped': 'status-shipped',
-      'Delivered': 'status-delivered',
-      'Cancelled': 'status-cancelled'
+      'Pendente': 'status-pendente',
+      'Processando': 'status-processando',
+      'Enviado': 'status-enviado',
+      'Entregue': 'status-entregue',
+      'Cancelado': 'status-cancelado'
     }
-    return statusColors[status] || 'status-pending'
+    return statusColors[status] || 'status-pendente'
   }
 
-  // Função para parsear os itens do pedido (formato: [(product_id, quantity, campaign_id, unit_price)...])
+  // Função para parsear os itens do pedido
   const parseOrderItems = (itemString) => {
     try {
-      // Remove colchetes e divide por vírgula
       const items = itemString.replace(/[\[\]()]/g, '').split(',')
       const parsedItems = []
       
-      // Agrupa em grupos de 4 (product_id, quantity, campaign_id, unit_price)
       for (let i = 0; i < items.length; i += 4) {
         if (items[i] && items[i + 1]) {
           parsedItems.push({
             product_id: items[i].trim(),
-            quantity: parseInt(items[i + 1].trim()),
-            campaign_id: items[i + 2] ? items[i + 2].trim() : null,
-            unit_price: items[i + 3] ? parseFloat(items[i + 3].trim()) : null
+            quantity: parseInt(items[i + 1].trim()) || 1,
+            campaign_id: items[i + 2] && items[i + 2].trim() !== 'null' ? items[i + 2].trim() : '',
+            unit_price: items[i + 3] ? parseFloat(items[i + 3].trim()).toFixed(2) : ''
           })
         }
       }
@@ -148,14 +197,6 @@ const Orders = () => {
             placeholder="ID da Loja"
             value={formData.store_id}
             onChange={(e) => setFormData({...formData, store_id: e.target.value})}
-            required
-          />
-          
-          <textarea
-            placeholder="Itens do Pedido (formato: [(product_id, quantity, campaign_id, unit_price)...])"
-            value={formData.item}
-            onChange={(e) => setFormData({...formData, item: e.target.value})}
-            rows="3"
             required
           />
           
@@ -184,6 +225,70 @@ const Orders = () => {
             onChange={(e) => setFormData({...formData, date: e.target.value})}
             required
           />
+        </div>
+
+        {/* Seção de Itens do Pedido */}
+        <div className="items-section">
+          <h3>Itens do Pedido</h3>
+          
+          {items.map((item, index) => (
+            <div key={index} className="item-row">
+              <div className="item-grid">
+                <input
+                  type="text"
+                  placeholder="ID do Produto"
+                  value={item.product_id}
+                  onChange={(e) => updateItem(index, 'product_id', e.target.value)}
+                  required
+                />
+                
+                <input
+                  type="number"
+                  placeholder="Quantidade"
+                  min="1"
+                  value={item.quantity}
+                  onChange={(e) => {
+                    updateItem(index, 'quantity', e.target.value)
+                    calculateTotal()
+                  }}
+                  required
+                />
+                
+                <input
+                  type="text"
+                  placeholder="ID da Campanha (opcional)"
+                  value={item.campaign_id}
+                  onChange={(e) => updateItem(index, 'campaign_id', e.target.value)}
+                />
+                
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Preço Unitário"
+                  value={item.unit_price}
+                  onChange={(e) => {
+                    updateItem(index, 'unit_price', e.target.value)
+                    calculateTotal()
+                  }}
+                  required
+                />
+                
+                {items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeItem(index)}
+                    className="btn-remove"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          
+          <button type="button" onClick={addItem} className="btn-add-item">
+            + Adicionar Item
+          </button>
         </div>
         
         <div className="form-buttons">
@@ -221,15 +326,15 @@ const Orders = () => {
                     <p><strong>Total:</strong> {formatCurrency(order.total_amount)}</p>
                     
                     <div className="order-items">
-                      <strong>Itens:</strong>
+                      <strong>Itens ({parsedItems.length}):</strong>
                       {parsedItems.length > 0 ? (
                         <ul>
                           {parsedItems.map((item, index) => (
                             <li key={index}>
-                              Produto: {item.product_id}, 
-                              Qtd: {item.quantity}
-                              {item.campaign_id && `, Campanha: ${item.campaign_id}`}
-                              {item.unit_price && `, Preço: ${formatCurrency(item.unit_price)}`}
+                              <strong>Produto:</strong> {item.product_id} | 
+                              <strong> Qtd:</strong> {item.quantity} | 
+                              <strong> Preço:</strong> {formatCurrency(item.unit_price)}
+                              {item.campaign_id && ` | <strong>Campanha:</strong> ${item.campaign_id}`}
                             </li>
                           ))}
                         </ul>
