@@ -178,25 +178,6 @@ const Campaigns = () => {
         </div>
       </form>
 
-      {/* Filtro por Fornecedor */}
-      <div className="filter-section">
-        <h3>Filtrar por Fornecedor</h3>
-        <div className="filter-controls">
-          <input
-            type="text"
-            placeholder="Digite o ID do fornecedor"
-            value={supplierFilter}
-            onChange={(e) => setSupplierFilter(e.target.value)}
-          />
-          <button onClick={() => fetchCampaignsBySupplier(supplierFilter)} className="btn-primary">
-            Filtrar
-          </button>
-          <button onClick={fetchCampaigns} className="btn-secondary">
-            Limpar Filtro
-          </button>
-        </div>
-      </div>
-
       {/* Lista de Campanhas */}
       <div className="list-section">
         <h2>Lista de Campanhas ({campaigns.length})</h2>

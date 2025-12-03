@@ -86,7 +86,7 @@ const Suppliers = () => {
       phone_number: supplier.phone_number,
       status: supplier.status
     })
-    setEditingId(supplier._id || supplier.id)
+    setEditingId(supplier._id)
   }
 
   const resetForm = () => {
@@ -137,7 +137,7 @@ const Suppliers = () => {
           <div className="form-field">
             <input
               type="text"
-              placeholder="Categorias (separadas por vírgula)"
+              placeholder="Categoria"
               value={formData.supplier_category}
               onChange={(e) => setFormData({...formData, supplier_category: e.target.value})}
               list="category-suggestions"
@@ -148,9 +148,6 @@ const Suppliers = () => {
                 <option key={index} value={category} />
               ))}
             </datalist>
-            <small className="form-hint">
-              Ex: Informática, Segurança, Eletrônicos
-            </small>
           </div>
           
           <input
@@ -201,28 +198,40 @@ const Suppliers = () => {
         ) : (
           <div className="cards-grid">
             {suppliers.map((supplier) => (
-              <div key={supplier._id || supplier.id} className="card">
+              <div key={supplier._id} className="card">
                 <div className="card-header">
-                  <h3>{supplier.supplier_name}</h3>
+                  <div className="supplier-info">
+                    <h3>{supplier.supplier_name}</h3>
+                    <div className="supplier-id-row">
+                      <span className="id-label">ID:</span>
+                      <span className="supplier-id">{supplier._id}</span>
+                    </div>
+                  </div>
                   <span className={`status-badge ${getStatusBadge(supplier.status)}`}>
                     {getStatusText(supplier.status)}
                   </span>
                 </div>
                 <div className="card-body">
-                  <p>
-                    <strong>Categorias:</strong> 
-                    <span className="categories">
+                  <div className="info-row">
+                    <span className="info-label">Categorias:</span>
+                    <span className="info-value categories">
                       {renderCategories(supplier.supplier_category)}
                     </span>
-                  </p>
-                  <p><strong>E-mail:</strong> {supplier.contact_email}</p>
-                  <p><strong>Telefone:</strong> {formatPhoneNumber(supplier.phone_number)}</p>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">E-mail:</span>
+                    <span className="info-value">{supplier.contact_email}</span>
+                  </div>
+                  <div className="info-row">
+                    <span className="info-label">Telefone:</span>
+                    <span className="info-value">{formatPhoneNumber(supplier.phone_number)}</span>
+                  </div>
                 </div>
                 <div className="card-actions">
                   <button onClick={() => handleEdit(supplier)} className="btn-edit">
                     Editar
                   </button>
-                  <button onClick={() => handleDelete(supplier._id || supplier.id)} className="btn-delete">
+                  <button onClick={() => handleDelete(supplier._id)} className="btn-delete">
                     Excluir
                   </button>
                 </div>

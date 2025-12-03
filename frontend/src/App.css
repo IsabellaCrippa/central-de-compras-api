@@ -218,6 +218,20 @@ body {
   font-size: 1rem;
 }
 
+.filter-select {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: white;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
 /* ===== COMPONENTE LIST SECTION ===== */
 .list-section {
   background: white;
@@ -241,16 +255,19 @@ body {
 /* ===== COMPONENTE CARDS GRID ===== */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
 }
 
 .card {
+  background: white;
   border: 1px solid #ecf0f1;
   border-radius: 10px;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  background: white;
 }
 
 .card:hover {
@@ -258,32 +275,226 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
+/* ===== COMPONENTE SUPPLIERS ===== */
+.supplier-info,
+.store-info,
+.campaign-info {
+  flex: 1;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .card-header h3 {
-  color: #2c3e50;
+  margin: 0 0 8px 0;
   font-size: 1.2rem;
-  margin: 0;
+  color: #333;
 }
 
-.card-body p {
-  margin-bottom: 8px;
-  color: #555;
+.supplier-id-row,
+.store-id-row,
+.campaign-id-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5f5f5;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-top: 8px;
 }
 
-.card-body strong {
+.id-label {
+  font-weight: 600;
+  color: #666;
+  font-family: inherit;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.supplier-id,
+.store-id,
+.campaign-id {
   color: #2c3e50;
+  font-weight: 500;
+  flex: 1;
+  word-break: break-all;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  padding-top: 8px;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.5;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 90px;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.info-value {
+  flex: 1;
+  color: #333;
+  word-break: break-word;
+}
+
+.info-value.categories {
+  background: #e8f4fc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+  display: inline-block;
+  line-height: 1.4;
+}
+
+.info-value.address {
+  background: #f8f9fa;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #27ae60;
+}
+
+.info-value.email {
+  background: #fff3cd;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #ffc107;
+}
+
+.info-value.supplier-name {
+  background: #e8f4fc;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #3498db;
+  font-weight: 500;
+}
+
+.info-value.supplier-id {
+  background: #f8f9fa;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.info-value.discount-value {
+  background: #d4edda;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #28a745;
+  color: #155724;
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
 .card-actions {
   display: flex;
   gap: 10px;
-  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+  margin-top: auto;
+}
+
+.btn-edit, .btn-delete {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+.btn-edit {
+  background-color: #3498db;
+  color: white;
+}
+
+.btn-edit:hover {
+  background-color: #2980b9;
+}
+
+.btn-delete {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #c0392b;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  height: fit-content;
+}
+
+.status-active {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-inactive {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Scrollbar para o ID quando necessário */
+.supplier-id-row::-webkit-scrollbar,
+.store-id-row::-webkit-scrollbar,
+.campaign-id-row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.supplier-id-row::-webkit-scrollbar-track,
+.store-id-row::-webkit-scrollbar-track,
+.campaign-id-row::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.supplier-id-row::-webkit-scrollbar-thumb,
+.store-id-row::-webkit-scrollbar-thumb,
+.campaign-id-row::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 2px;
+}
+
+.supplier-id-row::-webkit-scrollbar-thumb:hover,
+.store-id-row::-webkit-scrollbar-thumb:hover,
+.campaign-id-row::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 /* ===== COMPONENTE BADGES ===== */
@@ -291,14 +502,6 @@ body {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  text-transform: uppercase;
 }
 
 .stock-badge {
@@ -310,12 +513,13 @@ body {
 }
 
 .discount-badge {
-  background: #e74c3c;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
   color: white;
-  padding: 4px 8px;
-  border-radius: 15px;
-  font-size: 0.8rem;
-  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
 }
 
 .level-badge {
@@ -357,36 +561,6 @@ body {
   background: #7f8c8d;
 }
 
-.btn-edit {
-  background: #f39c12;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.3s ease;
-}
-
-.btn-edit:hover {
-  background: #e67e22;
-}
-
-.btn-delete {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  padding: 8px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.3s ease;
-}
-
-.btn-delete:hover {
-  background: #c0392b;
-}
-
 .btn-password-toggle {
   position: absolute;
   right: 10px;
@@ -401,6 +575,41 @@ body {
 
 .btn-password-toggle:hover {
   background: rgba(0, 0, 0, 0.1);
+}
+
+.btn-remove {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 35px;
+  height: 35px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: background 0.3s ease;
+}
+
+.btn-remove:hover {
+  background: #c0392b;
+}
+
+.btn-add-item {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 10px;
+  transition: background 0.3s ease;
+}
+
+.btn-add-item:hover {
+  background: #219a52;
 }
 
 /* ===== COMPONENTE STATUS COLORS ===== */
@@ -426,16 +635,6 @@ body {
 
 .status-cancelado {
   background: #e74c3c;
-  color: white;
-}
-
-.status-active {
-  background: #27ae60;
-  color: white;
-}
-
-.status-inactive {
-  background: #95a5a6;
   color: white;
 }
 
@@ -481,7 +680,26 @@ body {
   color: #555;
 }
 
-/* ===== COMPONENTE SUPPLIERS ===== */
+/* Melhorias para a lista de itens nos cards */
+.order-items ul {
+  margin: 8px 0;
+  padding-left: 15px;
+}
+
+.order-items li {
+  margin-bottom: 5px;
+  padding: 5px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.order-items strong {
+  color: #2c3e50;
+  margin: 0 2px;
+}
+
+/* ===== COMPONENTE FORM FIELD ===== */
 .form-field {
   position: relative;
 }
@@ -569,58 +787,87 @@ body {
   align-items: end;
 }
 
-.btn-remove {
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  width: 35px;
-  height: 35px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  transition: background 0.3s ease;
+/* ===== COMPONENTE ORDERS ===== */
+.readonly-input {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+  color: #495057;
 }
 
-.btn-remove:hover {
-  background: #c0392b;
-}
-
-.btn-add-item {
-  background: #27ae60;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  margin-top: 10px;
-  transition: background 0.3s ease;
-}
-
-.btn-add-item:hover {
-  background: #219a52;
-}
-
-/* Melhorias para a lista de itens nos cards */
-.order-items ul {
-  margin: 8px 0;
-  padding-left: 15px;
-}
-
-.order-items li {
-  margin-bottom: 5px;
-  padding: 5px;
-  background: #f8f9fa;
-  border-radius: 4px;
+.date-badge {
+  background: #e8f4fc;
+  color: #3498db;
+  padding: 6px 12px;
+  border-radius: 20px;
   font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #3498db;
 }
 
-.order-items strong {
+.items-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.order-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.item-details {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 2fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.item-details strong {
   color: #2c3e50;
-  margin: 0 2px;
+}
+
+.campaign-badge {
+  background: #fff3cd;
+  color: #856404;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.item-subtotal {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.info-row.total {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #28a745;
+}
+
+/* ===== COMPONENTE CAMPAIGNS ===== */
+.card-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.filter-info {
+  background: #e8f4fc;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #3498db;
 }
 
 /* ===== UTILITÁRIOS ===== */
@@ -667,4 +914,3 @@ body {
 .card {
   animation: fadeIn 0.3s ease;
 }
-
